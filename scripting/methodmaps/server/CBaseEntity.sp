@@ -21,6 +21,9 @@ enum struct cbaseentityData
     CBaseEntity owner;
     char class[MAX_NAME_LENGTH];
     float timestamp;
+
+    // Flying Guillotine.
+    float cleaverChargeMeter;
 }
 static cbaseentityData cbaseentities[MAX_ENTITY_COUNT];
 
@@ -115,6 +118,11 @@ methodmap CBaseEntity
     {
         public get() { return cbaseentities[this].timestamp; }
     }
+    property float CleaverChargeMeter
+    {
+        public get() { return cbaseentities[this].cleaverChargeMeter; }
+        public set(float value) { cbaseentities[this].cleaverChargeMeter = value; }
+    }
 
     // Property wrappers.
     property bool Exists
@@ -161,6 +169,10 @@ methodmap CBaseEntity
     property bool IsPlayer
     {
         public get() { return this.Index > 0 && this.Index <= MaxClients; }
+    }
+    property bool IsWearable
+    {
+        public get() { return this.ClassContains("tf_wearable") != -1; }
     }
     property bool IsBaseCombatWeapon
     {

@@ -55,4 +55,8 @@ methodmap CTFPlayerShared
     {
         return TF2_IsPlayerInCondition(this.m_pOuter.Index, condition);
     }
+    public void StunPlayer(float time, float reduction, int flags, CBaseEntity attacker) // Use ctfplayer when methodmap declarations is a thing.
+    {
+        TF2_StunPlayer(this.m_pOuter.Index, time, reduction, flags, attacker != INVALID_ENTITY ? attacker.Index : 0);
+    }
 }

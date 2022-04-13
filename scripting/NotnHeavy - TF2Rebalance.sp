@@ -1,6 +1,5 @@
-// TODO: finish methodmap and expansion for CTFWeaponBase, CEconEntity, make CTFWearable methodmap.
-// edit: multiple inheritance is not a feature, remove ihasattributes and add its contents into ctfweaponbase and ctfplayer.
 // TODO: work on something similar to mini-crit impact sounds with the Flying Guillotine on stunned targets.
+// TODO: make menu containing all changes.
 
 //////////////////////////////////////////////////////////////////////////////
 // MADE BY NOTNHEAVY. USES GPL-3, AS PER REQUEST OF SOURCEMOD               //
@@ -48,6 +47,8 @@
 
 static int pl_impact_stun_range_mutes = 0;
 
+static ConVar tf_scout_stunball_base_duration;
+
 DHookSetup DHooks_CTFPlayer_OnTakeDamage;
 DHookSetup DHooks_CTFPlayer_OnTakeDamage_Alive;
 DHookSetup DHooks_CTFPlayer_TeamFortress_CalculateMaxSpeed;
@@ -67,6 +68,7 @@ Address CTFWeaponBase_m_flLastDeployTime;
 #include "methodmaps/shared/CTFPlayerShared.sp"
 #include "methodmaps/shared/CEconEntity.sp"
 #include "methodmaps/shared/CTFWeaponBase.sp"
+#include "methodmaps/shared/CTFWearable.sp"
 #include "methodmaps/server/CTFPlayer.sp"
 #include "methodmaps/server/CTakeDamageInfo.sp"
 
@@ -189,6 +191,9 @@ public void OnPluginStart()
 
     delete config;
 
+    // ConVars.
+    tf_scout_stunball_base_duration = FindConVar("tf_scout_stunball_base_duration");
+
     // Hook onto entities.
     for (int i = 1; i <= MaxClients; ++i)
     {
@@ -258,16 +263,16 @@ public void OnGameFrame()
         if (player.InGame)
         {
             // Prevent shortening the recharge duration for the Flying Guillotine.
-            CBaseEntity doesHaveWeapon = player.GetWeaponFromList({ 812, 833 }, 2);
+            CEconEntity doesHaveWeapon = player.GetWeaponFromList({ 812, 833 }, 2);
             if (doesHaveWeapon != INVALID_ENTITY)
             {
                 float regen = doesHaveWeapon.GetMemberFloat(Prop_Send, "m_flEffectBarRegenTime");
-                if (regen != 0 && player.CleaverChargeMeter - regen == 1.50)
+                if (regen != 0 && doesHaveWeapon.CleaverChargeMeter - regen == 1.50)
                 {
-                    regen = player.CleaverChargeMeter;
+                    regen = doesHaveWeapon.CleaverChargeMeter;
                     doesHaveWeapon.SetMemberFloat(Prop_Send, "m_flEffectBarRegenTime", regen);
                 }
-                player.CleaverChargeMeter = regen;
+                doesHaveWeapon.CleaverChargeMeter = regen;
             }
 
             // If a player is no longer burning, disable the FromDegreaser check.
@@ -288,9 +293,9 @@ public void OnGameFrame()
         }
     }
 
-    // Run vector debug every 5 seconds.
+    // Run vector debug every 10 seconds.
     /*
-    if (frame % (TICK_RATE * 5) == 0)
+    if (frame % (TICK_RATE * 10) == 0)
     {
         DebugVectors();
     }
@@ -317,7 +322,7 @@ Action EntityTouch(int entityIndex, int otherIndex)
 Action ClientDeployingWeapon(int clientIndex, int weaponIndex)
 {
     CTFPlayer player = view_as<CTFPlayer>(clientIndex);
-    CBaseEntity lastWeapon = player.GetMemberEntity(Prop_Send, "m_hLastWeapon");
+    CTFWeaponBase lastWeapon = ToTFWeaponBase(player.GetMemberEntity(Prop_Send, "m_hLastWeapon"));
     if (lastWeapon != INVALID_ENTITY) // Always force weapons to have the previous weapon's holster speed attribute applied.
         WriteToValue(GetEntityAddress(lastWeapon.Index) + CTFWeaponBase_m_flLastDeployTime, 0.00);
     return Plugin_Continue;
@@ -338,7 +343,7 @@ MRESReturn OnTakeDamage(int entity, DHookReturn returnValue, DHookParam paramete
 {
     CTakeDamageInfo info = view_as<CTakeDamageInfo>(parameters.Get(1));
     CTFPlayer victim = view_as<CTFPlayer>(entity);
-    if (info.m_hAttacker < view_as<CTFPlayer>(1) || info.m_hAttacker > view_as<CTFPlayer>(MaxClients))
+    if (!info.m_hAttacker.IsPlayer)
         return MRES_Ignored;
 
     // Always mini-crit with the shield while charging and the next melee crit is CRIT_MINI. This allows the Caber to also mini-crit.
@@ -379,9 +384,8 @@ MRESReturn OnTakeDamage(int entity, DHookReturn returnValue, DHookParam paramete
     // Also I'm gonna deal with stunning differently, because the current stun mechanic is quite bad.
     if (info.m_iDamageCustom == TF_CUSTOM_BASEBALL && info.m_hWeapon.ItemDefinitionIndex == 44)
     {
-        // use tf_scout_stunball_base_duration
         float timeExisted = min(GetGameTime() - victim.LastProjectileEncountered.Timestamp, FLIGHT_TIME_TO_MAX_STUN);
-        float duration = timeExisted / FLIGHT_TIME_TO_MAX_SLOWDOWN_RAMPUP * 6.0;
+        float duration = timeExisted / FLIGHT_TIME_TO_MAX_SLOWDOWN_RAMPUP * tf_scout_stunball_base_duration.FloatValue;
         info.m_flDamage = 15.00;
         victim.TimeUntilSandmanStunEnd = GetGameTime() + duration;
         victim.m_Shared.RemoveCond(TFCond_Dazed);
@@ -389,7 +393,7 @@ MRESReturn OnTakeDamage(int entity, DHookReturn returnValue, DHookParam paramete
         {
             duration += 1.0; // 7 seconds in total.
             info.m_flDamage = 30.00;
-            TF2_StunPlayer(victim.Index, duration, 0.5, TF_STUN_CONTROLS | TF_STUN_SPECIAL_SOUND, info.m_hAttacker.Index); // put this in m_Shared methodmap
+            victim.m_Shared.StunPlayer(duration, 0.5, TF_STUN_CONTROLS | TF_STUN_SPECIAL_SOUND, info.m_hAttacker);
         }
     }
      
@@ -412,7 +416,7 @@ MRESReturn OnTakeDamagePost(int entity, DHookReturn returnValue, DHookParam para
             victim.m_Shared.m_flBurnDuration = 1.0; // The Degreaser afterburn duration initially only lasts 1.0s.
     }
 
-    return MRES_Ignored; 
+    return MRES_Ignored;
 }
 
 MRESReturn OnTakeDamageAlivePost(int entity, DHookReturn returnValue, DHookParam parameters)
@@ -457,7 +461,7 @@ MRESReturn RemoveCond(Address thisPointer, DHookParam parameters)
 
     if (condition == TFCond_Dazed)
     {
-        CBaseEntity weapon = client.GetMemberEntity(Prop_Send, "m_hActiveWeapon");
+        CTFWeaponBase weapon = ToTFWeaponBase(client.GetMemberEntity(Prop_Send, "m_hActiveWeapon"));
         if (weapon != INVALID_ENTITY)
             weapon.SetMember(Prop_Send, "m_fEffects", weapon.GetMember(Prop_Send, "m_fEffects") & ~EF_NODRAW);
     }

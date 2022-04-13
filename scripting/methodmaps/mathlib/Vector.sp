@@ -17,7 +17,7 @@
 
 static ArrayList vectorCollection;
 static int globalIndex = 0;
-static float globalVectors[64][3];
+static float globalVectors[GLOBAL_VECTOR_SIZE][3];
 
 //////////////////////////////////////////////////////////////////////////////
 // VECTOR METHODMAP                                                         //

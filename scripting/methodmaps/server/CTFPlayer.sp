@@ -29,9 +29,6 @@ enum struct ctfplayerData
     // Projectiles.
     CBaseEntity lastProjectileEncountered;
 
-    // Flying Guillotine.
-    float cleaverChargeMeter;
-
     // Sandman.
     float timeUntilSandmanStunEnd;
 
@@ -83,11 +80,6 @@ methodmap CTFPlayer < CBaseEntity
         public get() { return ctfplayers[this].lastProjectileEncountered; }
         public set(CBaseEntity value) { ctfplayers[this].lastProjectileEncountered = value; }
     }
-    property float CleaverChargeMeter
-    {
-        public get() { return ctfplayers[this].cleaverChargeMeter; }
-        public set(float value) { ctfplayers[this].cleaverChargeMeter = value; }
-    }
     property float TimeUntilSandmanStunEnd
     {
         public get() { return ctfplayers[this].timeUntilSandmanStunEnd; }
@@ -135,8 +127,6 @@ methodmap CTFPlayer < CBaseEntity
                 break;
             }
         }
-        if (weapon.IsBaseCombatWeapon)
-            ToTFWeaponBase(weapon).ApplyNewAttributes();
     }
 
     // Methods that should only be used within this class and inherited classes (protected).
@@ -162,16 +152,19 @@ methodmap CTFPlayer < CBaseEntity
         {
             CTFWeaponBase weapon = this.GetWeaponFromSlot(i);
             if (weapon != INVALID_ENTITY)
+            {
                 this.registerToWeaponList(weapon);
+                weapon.ApplyNewAttributes();
+            }
         }
 
         // Iterate through wearables.
-        for (CBaseEntity entity = view_as<CBaseEntity>(MAXPLAYERS); entity < view_as<CBaseEntity>(MAX_ENTITY_COUNT); ++entity)
+        for (CTFWearable entity = view_as<CTFWearable>(MAXPLAYERS); entity < view_as<CTFWearable>(MAX_ENTITY_COUNT); ++entity)
         {
-            if (entity.Exists)
+            if (entity.Exists && entity.IsWearable && entity.Owner == this)
             {
-                if (entity.ClassContains("tf_wearable") != -1 && entity.Owner.Index == this.Index)
-                    this.registerToWeaponList(entity);
+                this.registerToWeaponList(entity);
+                entity.ApplyNewAttributes();
             }
         }
     }
