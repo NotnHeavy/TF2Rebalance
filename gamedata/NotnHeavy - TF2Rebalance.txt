@@ -1,0 +1,133 @@
+"Games"
+{
+	"tf"
+	{
+		"Signatures"
+		{
+			"CTFPlayer::OnTakeDamage"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x81\xEC\x2A\x2A\x2A\x2A\x56\x8B\x75\x2A\x57\x8B\xF9\x8D\x8D\x2A\x2A\x2A\x2A"
+				"linux"	  "@_ZN9CTFPlayer12OnTakeDamageERK15CTakeDamageInfo"
+			}
+			"CTFPlayer::OnTakeDamage_Alive"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x2A\x56\x57\x8B\xF9\x8B\x0D\x2A\x2A\x2A\x2A\x89\x7D\x2A"
+				"linux"   "@_ZN9CTFPlayer18OnTakeDamage_AliveERK15CTakeDamageInfo"
+			}
+			"CTFPlayer::TeamFortress_CalculateMaxSpeed"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x18\x83\x3D\x2A\x2A\x2A\x2A\x00"
+				"linux"	  "@_ZNK9CTFPlayer30TeamFortress_CalculateMaxSpeedEb"
+			}
+
+			"CTFPlayerShared::AddCond"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x08\x56\x8B\xF1\x8B\x8E\x90\x01\x00\x00\x85\xC9"
+				"linux"   "@_ZN15CTFPlayerShared7AddCondE7ETFCondfP11CBaseEntity"
+			}
+			"CTFPlayerShared::RemoveCond"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x08\x53\x8B\x5D\x08\x56\x53"
+				"linux"   "@_ZN15CTFPlayerShared10RemoveCondE7ETFCondb"
+			}
+		}
+		"Offsets"
+		{
+			"CTFWeaponBase::m_flLastDeployTime"
+			{
+				"windows" "1764"
+				"linux"   "1768"
+			}
+		}
+		"Functions"
+		{
+			"CTFPlayer::OnTakeDamage"
+			{
+				"signature"	"CTFPlayer::OnTakeDamage"
+				"callconv"	"thiscall"
+				"return"	"int" 
+				"this"		"entity"
+				"arguments"
+				{
+					"inputInfo"
+					{
+						"type" "int"
+					}
+				}
+			}
+			"CTFPlayer::OnTakeDamage_Alive"
+			{
+				"signature"	"CTFPlayer::OnTakeDamage_Alive"
+				"callconv"	"thiscall"
+				"return"	"int" 
+				"this"		"entity"
+				"arguments"
+				{
+					"info"
+					{
+						"type" "int"
+					}
+				}
+			}
+			"CTFPlayer::TeamFortress_CalculateMaxSpeed"
+			{
+				"signature" "CTFPlayer::TeamFortress_CalculateMaxSpeed"
+				"callconv"  "thiscall"
+				"this"      "entity"
+				"return"    "float"
+				"arguments"
+				{
+					"bIgnoreSpecialAbility"
+					{
+						"type" "bool"
+					}
+				}
+			}
+			"CTFPlayerShared::AddCond"
+			{
+				"signature" "CTFPlayerShared::AddCond"
+				"callconv"  "thiscall"
+				"this"      "address"
+				"return"    "void"
+				"arguments"
+				{
+					"eCond"
+					{
+						"type" "int"
+					}
+					"flDuration"
+					{
+						"type" "float"
+					}
+					"pProvider"
+					{
+						"type" "int"
+					}
+				}
+			}
+			"CTFPlayerShared::RemoveCond"
+			{
+				"signature" "CTFPlayerShared::RemoveCond"
+				"callconv"  "thiscall"
+				"this"      "address"
+				"return"    "void"
+				"arguments"
+				{
+					"eCond"
+					{
+						"type" "int"
+					}
+					"ignore_duration"
+					{
+						"type" "bool"
+					}
+				}
+			}
+		}
+	}
+}
