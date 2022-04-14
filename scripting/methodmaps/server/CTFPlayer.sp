@@ -21,6 +21,7 @@ enum struct ctfplayerData
 //////////////////////////////////////////////////////////////////////////////
 
     CEconEntity weapons[MAX_WEAPONS];
+    char lastLoadoutEntry[256];
     
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC                                                                   //
@@ -176,7 +177,24 @@ methodmap CTFPlayer < CBaseEntity
         for (int i = 0; i < MAX_WEAPONS; ++i)
         {
             CEconEntity entity = ctfplayers[this].weapons[i];
+            if (entity == view_as<CEconEntity>(0))
+                break;
             if (entity.Exists && entity.ItemDefinitionIndex == itemDefinition)
+                return entity;
+        }
+        return view_as<CEconEntity>(INVALID_ENTITY);
+    }
+    // Returns INVALID_ENTITY if invalid.
+    public CEconEntity GetWeaponFromClassname(char[] className)
+    {
+        if (!this.InGame)
+            return view_as<CEconEntity>(INVALID_ENTITY);
+        for (int i = 0; i < MAX_WEAPONS; ++i)
+        {
+            CEconEntity entity = ctfplayers[this].weapons[i];
+            if (entity == view_as<CEconEntity>(0))
+                break;
+            if (entity.Exists && entity.ClassEquals(className))
                 return entity;
         }
         return view_as<CEconEntity>(INVALID_ENTITY);
@@ -218,6 +236,81 @@ methodmap CTFPlayer < CBaseEntity
 
         // Calculate the damage.
         return RemapValClamped(length, 0.00, radius, damage * rampup, damage * falloff);
+    }
+    public void ResetLoadoutLastEntry()
+    {
+        ctfplayers[this].lastLoadoutEntry = "";
+    }
+    public int CreateLoadoutPanel()
+    {
+        // Create the file name for the weapon changes list.
+        static char list[PLATFORM_MAX_PATH];
+        if (list[0] == '\0')
+            Format(list, PLATFORM_MAX_PATH, "addons/sourcemod/configs/%s - Weapons.txt", PLUGIN_NAME);
+        if (!FileExists(list, true))
+            ThrowError("%s does not exist in your /tf/ directory!", list);
+
+        // Load the file with the keyvalues methodmap.
+        KeyValues pair = new KeyValues("WeaponChanges");
+        pair.ImportFromFile(list);
+        if (ctfplayers[this].lastLoadoutEntry[0] != '\0')
+            pair.JumpToKey(ctfplayers[this].lastLoadoutEntry);
+        else if (!pair.GotoFirstSubKey())
+        {
+            delete pair;
+            return 1;
+        }
+
+        // Compare the player's loadout with the keyvalues pair.
+        Panel menu = new Panel();
+        char buffer[256];
+        bool found = false;
+        bool foundNext = false;
+        do
+        {
+            pair.GetSectionName(buffer, sizeof(buffer));
+            int index = StringToInt(buffer);
+            if (this.GetWeapon(index) != INVALID_ENTITY || this.GetWeaponFromClassname(buffer) != INVALID_ENTITY)
+            {
+                if (found)
+                {
+                    strcopy(ctfplayers[this].lastLoadoutEntry, 256, buffer);
+                    foundNext = true;
+                    break;
+                }
+                if (pair.GotoFirstSubKey(false))
+                {
+                    do
+                    {
+                        char key[256];
+                        char value[256];
+                        pair.GetSectionName(key, sizeof(key));
+                        pair.GetString(NULL_STRING, value, sizeof(value));
+                        
+                        if (StrEqual(key, "name"))
+                            menu.SetTitle(value);
+                        else
+                            menu.DrawText(value);
+                    } while (pair.GotoNextKey(false));
+                    pair.GoBack();
+                    found = true;
+                }
+            }
+        } while (pair.GotoNextKey());
+
+        // Send the menu to the client.
+        if (!found)
+        {
+            delete pair;
+            return 1;
+        }
+        menu.DrawItem("Exit", ITEMDRAW_CONTROL);
+        if (foundNext)
+            menu.DrawItem("Next", ITEMDRAW_CONTROL);
+        menu.Send(this.Index, ShowLoadoutMenuAction, MENU_TIME_FOREVER);
+        delete pair;
+        delete menu;
+        return 0;
     }
 }
 

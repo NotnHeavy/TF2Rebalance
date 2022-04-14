@@ -158,6 +158,8 @@ public void OnPluginStart()
     HookEvent("post_inventory_application", PostClientInventoryReset);
     HookEvent("player_hurt", ClientHurt, EventHookMode_Pre);
 
+    RegConsoleCmd("loadout", ShowLoadout);
+
     // Configs.
     GameData config = LoadGameConfigFile(PLUGIN_NAME);
     if (config == null)
@@ -213,6 +215,25 @@ public void OnPluginStart()
     PrintToServer("--------------------------------------------------------\n\"%s\" has loaded.\n--------------------------------------------------------", PLUGIN_NAME);
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// MENUS                                                                    //
+//////////////////////////////////////////////////////////////////////////////
+
+int ShowLoadoutMenuAction(Menu menu, MenuAction action, int param1, int param2)
+{
+    CTFPlayer player = view_as<CTFPlayer>(param1);
+    if (action == MenuAction_Select && param2 == 2) // The user selected the next button.
+        player.CreateLoadoutPanel();
+}
+
+Action ShowLoadout(int clientIndex, int args)
+{
+    CTFPlayer player = view_as<CTFPlayer>(clientIndex);
+    player.ResetLoadoutLastEntry();
+    if (player.CreateLoadoutPanel() == 1)
+        PrintToChat(player.Index, "Your loadout is the same as stock TF2.");
+    return Plugin_Handled;
+}
 //////////////////////////////////////////////////////////////////////////////
 // EVENTS                                                                   //
 //////////////////////////////////////////////////////////////////////////////
@@ -324,7 +345,7 @@ Action ClientDeployingWeapon(int clientIndex, int weaponIndex)
     CTFPlayer player = view_as<CTFPlayer>(clientIndex);
     CTFWeaponBase lastWeapon = ToTFWeaponBase(player.GetMemberEntity(Prop_Send, "m_hLastWeapon"));
     if (lastWeapon != INVALID_ENTITY) // Always force weapons to have the previous weapon's holster speed attribute applied.
-        WriteToValue(GetEntityAddress(lastWeapon.Index) + CTFWeaponBase_m_flLastDeployTime, 0.00);
+        lastWeapon.m_flLastDeployTime = 0.00;
     return Plugin_Continue;
 }
 
@@ -350,7 +371,7 @@ MRESReturn OnTakeDamage(int entity, DHookReturn returnValue, DHookParam paramete
     if (info.m_hAttacker.GetMember(Prop_Send, "m_iNextMeleeCrit") == 1 && info.m_hAttacker.GetMemberEntity(Prop_Send, "m_hActiveWeapon") == info.m_hAttacker.GetWeaponFromSlot(TFWeaponSlot_Melee))
         info.SetCritType(victim, CRIT_MINI);
 
-    // Buff the self-explosive damage by 10%. Also rewrote the explosive damage ramp-up since it's currently finnicky.
+    // Buff the Caber self-explosive damage by 10%. Also rewrote the explosive damage ramp-up since it's currently finnicky.
     if (info.m_hWeapon.ItemDefinitionIndex == 307 && info.m_iDamageCustom == TF_CUSTOM_STICKBOMB_EXPLOSION)
     {
         if (victim == info.m_hAttacker)

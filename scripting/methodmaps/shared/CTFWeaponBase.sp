@@ -22,6 +22,13 @@ methodmap CTFWeaponBase < CEconEntity
         return view_as<CTFWeaponBase>(index);
     }
 
+    // CTFWeaponBase members.
+    property float m_flLastDeployTime
+    {
+        public get() { return Dereference(this.Address + CTFWeaponBase_m_flLastDeployTime); }
+        public set(float value) { WriteToValue(this.Address + CTFWeaponBase_m_flLastDeployTime, value); }
+    }
+
     // Public methods.
     public void ApplyNewAttributes()
     {

@@ -1,0 +1,71 @@
+// This config is used for the "showloadout" command.
+"WeaponChanges"
+{
+    // Scout primaries.
+    "220"
+    {
+        "name"   "Shortstop"
+        "change" "+ 35% slower reload instead of 50% slower reload."
+        "change" "+ 20% health bonus from health packs while equipped."
+    }
+    "772"
+    {
+        "name"   "Baby Face's Blaster"
+        "change" "+ It now takes 75 damage to lose all 100% boost."
+        "change" "+ Air jumps only take away 50% of your boost."
+    }
+    "1103"
+    {
+        "name"   "Back Scatter"
+        "change" "+ No accuracy nerf."
+    }
+    
+    // Scout secondaries.
+    "773"
+    {
+        "name"   "Pretty Boy's Pocket Pistol"
+        "change" "+/- On hit, you gain from 4 at best to 2 at worst HP, from a range of 0 to 512 HU."
+        "change" "- 25% damage penalty."
+    }
+    "tf_weapon_cleaver"
+    {
+        "name"   "Flying Guillotine"
+        "change" "+ 50% damage bonus vs stunned targets."
+        "change" "- Recharge duration is no longer shortened via long range shots."
+    }
+
+    // Scout melees.
+    "44"
+    {
+        "name"   "Sandman"
+        "change" "+ On moonshots (when the stun ball hits 1s after launch), players are now fully
+stunned for 7s, with 0 control."
+        "change" "+ The stun ball deals 100% more damage on moonshots."
+        "change" "+ Outside moonshots, stunned targets move 50% as fast as they usually would. 
+They cannot strafe out of this."
+        "change" "- It now takes 15s to recharge instead of 10s."
+    }
+
+    // Pyro primaries.
+    "215"
+    {
+        "name"   "Degreaser"
+        "change" "+ This weapon now boasts a 50% faster weapon switch, rather than 60% faster to,
+30% faster from."
+        "change" "+/- The afterburn penalty has been removed. Instead, the afterburn duration
+initially only lasts 1s and can only ramp up to 3s. This also applies to other weapons that can
+ignite players until the player is no longer burning."
+        "change" "+ 35% damage penalty."
+    }
+
+    // Demoman melees.
+    "307"
+    {
+        "name" "Ullapool Caber"
+        "change" "+ This weapon now mini-crits with the shields."
+        "change" "+ Re-wrote the explosive damage code, so it now deals a minimum of 75 damage, with
+a ramp-up of 10% (83 damage). On average the Caber can deal 132-135 damage to your primary target."
+        "change" "+/- This weapon no longer has a 100% deploy speed penalty, but it now has a 35%
+longer weapon switch."
+    }
+}
