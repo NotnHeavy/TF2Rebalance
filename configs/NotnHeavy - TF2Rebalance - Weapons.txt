@@ -45,6 +45,12 @@ stunned for 7s, with 0 control."
 They cannot strafe out of this."
         "change" "- It now takes 15s to recharge instead of 10s."
     }
+    "349"
+    {
+        "name"   "Sun-on-a-Stick"
+        "change" "+/- Replaced the 25% damage penalty with a 50% damage penalty vs non-burning players."
+        "change" "- No random critical hits."
+    }
 
     // Pyro primaries.
     "215"
@@ -56,6 +62,13 @@ They cannot strafe out of this."
 initially only lasts 1s and can only ramp up to 3s. This also applies to other weapons that can
 ignite players until the player is no longer burning."
         "change" "+ 35% damage penalty."
+    }
+
+    // Pyro melees.
+    "38"
+    {
+        "name"   "Axtinguisher"
+        "change" "- The holster attribute is now independent of how long this weapon was equipped." // might implement macros for these configs, since i'm probably going to be repeating this elsewhere.
     }
 
     // Demoman melees.

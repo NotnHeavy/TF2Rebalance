@@ -62,7 +62,18 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("heal on hit for rapidfire", 0.00); // On Hit: Gain up to +0 health
                 
                 // Apply new attributes.
-                this.setAttribute("damage penalty", 0.85); // -25% damage penalty
+                this.setAttribute("damage penalty", 0.75); // -25% damage penalty
+            }
+
+            // Scout melee.
+            case 349: // Sun-on-a-Stick.
+            {
+                // Remove old attributes.
+                this.setAttribute("damage penalty", 1.00); // -0% damage penalty
+
+                // Apply new attributes.
+                this.setAttribute("dmg penalty vs nonburning", 0.50); // -50% damage vs non-burning players
+                this.setAttribute("crit mod disabled", 0.00); // No random critical hits
             }
             
             // Pyro.

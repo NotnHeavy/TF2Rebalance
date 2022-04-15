@@ -156,6 +156,7 @@ public void OnPluginStart()
     AddNormalSoundHook(SoundPlayed);
 
     HookEvent("post_inventory_application", PostClientInventoryReset);
+    HookEvent("player_spawn", ClientSpawned);
     HookEvent("player_hurt", ClientHurt, EventHookMode_Pre);
 
     RegConsoleCmd("loadout", ShowLoadout);
@@ -202,6 +203,7 @@ public void OnPluginStart()
         if (IsClientInGame(i))
         {
             CTFPlayer player = CTFPlayer(i);
+            player.ShowWelcomePanel();
             if (player.Alive)
                 player.StructuriseWeaponList();
         }
@@ -224,6 +226,12 @@ int ShowLoadoutMenuAction(Menu menu, MenuAction action, int param1, int param2)
     CTFPlayer player = view_as<CTFPlayer>(param1);
     if (action == MenuAction_Select && param2 == 2) // The user selected the next button.
         player.CreateLoadoutPanel();
+    return 0;
+}
+
+int ShowWelcomeMenuAction(Menu menu, MenuAction action, int param1, int param2)
+{
+    return 0;
 }
 
 Action ShowLoadout(int clientIndex, int args)
@@ -243,6 +251,14 @@ public Action PostClientInventoryReset(Event event, const char[] name, bool dont
     CTFPlayer client = view_as<CTFPlayer>(GetClientOfUserId(event.GetInt("userid")));
     client.TimeUntilSandmanStunEnd = 0.00;
     client.StructuriseWeaponList();
+    return Plugin_Continue;
+}
+
+public Action ClientSpawned(Event event, const char[] name, bool dontBroadcast)
+{
+    CTFPlayer client = view_as<CTFPlayer>(GetClientOfUserId(event.GetInt("userid")));
+    client.ShowWelcomePanel();
+    return Plugin_Continue;
 }
 
 public Action ClientHurt(Event event, const char[] name, bool dontBroadcast)

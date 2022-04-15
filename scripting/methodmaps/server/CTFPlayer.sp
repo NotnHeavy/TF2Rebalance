@@ -22,7 +22,8 @@ enum struct ctfplayerData
 
     CEconEntity weapons[MAX_WEAPONS];
     char lastLoadoutEntry[256];
-    
+    bool shownWelcomeMenu;
+
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC                                                                   //
 //////////////////////////////////////////////////////////////////////////////
@@ -57,6 +58,7 @@ methodmap CTFPlayer < CBaseEntity
         // CTFPlayer code.
         SDKHook(index, SDKHook_WeaponCanSwitchTo, ClientDeployingWeapon);
         SDKHook(index, SDKHook_WeaponEquipPost, ClientEquippedWeapon);
+        ctfplayers[index].shownWelcomeMenu = false;
 
         return view_as<CTFPlayer>(index);
     }
@@ -145,6 +147,8 @@ methodmap CTFPlayer < CBaseEntity
     public void StructuriseWeaponList()
     {
         // Reset weapon structure.
+        if (this == INVALID_ENTITY)
+            return;
         for (int i = 0; i < MAX_WEAPONS; ++i)
             ctfplayers[this].weapons[i] = view_as<CTFWeaponBase>(INVALID_ENTITY);
 
@@ -311,6 +315,19 @@ methodmap CTFPlayer < CBaseEntity
         delete pair;
         delete menu;
         return 0;
+    }
+    public void ShowWelcomePanel()
+    {
+        if (ctfplayers[this].shownWelcomeMenu)
+            return;
+        ctfplayers[this].shownWelcomeMenu = true;
+        Panel menu = new Panel();
+        menu.SetTitle("Welcome to NotnHeavy's TF2Rebalance server!");
+        menu.DrawText("Use !loadout (/loadout for silenced command) to check your loadout!");
+        menu.DrawText("I am still working on rebalances though!");
+        menu.DrawItem("Exit", ITEMDRAW_CONTROL);
+        menu.Send(this.Index, ShowWelcomeMenuAction, 15);
+        delete menu;
     }
 }
 
