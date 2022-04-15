@@ -59,4 +59,8 @@ methodmap CTFPlayerShared
     {
         TF2_StunPlayer(this.m_pOuter.Index, time, reduction, flags, attacker != INVALID_ENTITY ? attacker.Index : 0);
     }
+    public void Burn(CBaseEntity attacker, CTFWeaponBase weapon, float burningTime) // use ctfplayer when method declarations is a thing.
+    {
+        SDKCall(SDKCall_CTFPlayerShared_Burn, this.Address, attacker.Index, weapon.Index, burningTime);
+    }
 }

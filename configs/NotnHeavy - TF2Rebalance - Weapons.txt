@@ -48,7 +48,9 @@ They cannot strafe out of this."
     "349"
     {
         "name"   "Sun-on-a-Stick"
+        "change" "+ Inflicts 1.5s afterburn (which does not stack up) when hitting a player's back."
         "change" "+/- Replaced the 25% damage penalty with a 50% damage penalty vs non-burning players."
+        "change" "- 20% slower firing speed."
         "change" "- No random critical hits."
     }
 

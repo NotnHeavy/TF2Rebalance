@@ -35,6 +35,12 @@
 				"windows" "\x55\x8B\xEC\x83\xEC\x08\x53\x8B\x5D\x08\x56\x53"
 				"linux"   "@_ZN15CTFPlayerShared10RemoveCondE7ETFCondb"
 			}
+			"CTFPlayerShared::Burn"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x08\x56\x8B\xF1\x8B\x8E\x90\x01\x00\x00\x8B\x01"
+				"linux"   "@_ZN15CTFPlayerShared4BurnEP9CTFPlayerP13CTFWeaponBasef"
+			}
 		}
 		"Offsets"
 		{

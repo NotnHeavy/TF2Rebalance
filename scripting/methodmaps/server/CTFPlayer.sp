@@ -76,6 +76,12 @@ methodmap CTFPlayer < CBaseEntity
     {
         return TF2_GetPlayerClass(this.Index);
     }
+    public Vector EyeAngles(bool global = true)
+    {
+        float buffer[3];
+        GetClientEyeAngles(this.Index, buffer);
+        return Vector(buffer[0], buffer[1], buffer[2], global);
+    }
 
     // Public properties.
     property CBaseEntity LastProjectileEncountered
@@ -233,13 +239,7 @@ methodmap CTFPlayer < CBaseEntity
     }
     public float CalculateRadiusDamage(Vector damagePosition, float radius, float damage, float rampup, float falloff, bool center = true)
     {
-        // Calculate length.
-        Vector absOrigin = this.GetAbsOrigin(center);
-        float length = (absOrigin - damagePosition).Length();
-        absOrigin.Dispose();
-
-        // Calculate the damage.
-        return RemapValClamped(length, 0.00, radius, damage * rampup, damage * falloff);
+        return RemapValClamped((this.GetAbsOrigin(center) - damagePosition).Length(), 0.00, radius, damage * rampup, damage * falloff);
     }
     public void ResetLoadoutLastEntry()
     {

@@ -5,6 +5,8 @@
 // This would've been a lot easier to do if I could actually overload operators with enum structs or at least return them from methodmaps.
 // Also I know this code isn't the best but I don't know what else to do.
 
+// Also I'm just going to combine the functions for QAngles/Vectors into one methodmap.
+
 #pragma semicolon true
 #pragma newdecls required
 
@@ -189,6 +191,15 @@ methodmap Vector
         GetVectorCrossProduct(buffer, bufferOther, result);
         return Vector(result[0], result[1], result[2], true); 
     }
+    public float NormalizeInPlace()
+    {
+        float buffer[3];
+        float result[3];
+        this.GetBuffer(buffer);
+        float normalized = NormalizeVector(buffer, result);
+        this.SetBuffer(result);
+        return normalized;
+    }
 
     // operator=
     public void Assign(const Vector right)
@@ -248,39 +259,49 @@ stock Vector operator-(const Vector self)
 
 stock void VectorVectors(Vector vector, Vector right = INVALID_VECTOR, Vector up = INVALID_VECTOR)
 {
-    float buffer[3];
-    float rightBuffer;
-    float upBuffer;
+    float forwardBuffer[3];
+    float rightBuffer[3];
+    float upBuffer[3];
     
-    vector.GetBuffer(buffer);
-    if (right == INVALID_VECTOR)
-        rightBuffer = NULL_VECTOR;
-    else
+    vector.GetBuffer(forwardBuffer);
+    if (right != INVALID_VECTOR)
         right.GetBuffer(rightBuffer);
-    if (up == INVALID_VECTOR)
-        upBuffer = NULL_VECTOR;
-    else
+    if (up != INVALID_VECTOR)
         up.GetBuffer(upBuffer);
     
     GetVectorVectors(buffer, rightBuffer, upBuffer);
     
-    vector.SetBuffer(buffer);
+    vector.SetBuffer(forwardBuffer);
     if (right != INVALID_VECTOR)
         right.SetBuffer(rightBuffer);
     if (up != INVALID_VECTOR)
         up.SetBuffer(upBuffer);
 }
 
-stock void VectorNormalize(Vector vector)
+stock void AngleVectors(Vector angles, Vector forwardVector, Vector right = INVALID_VECTOR, Vector up = INVALID_VECTOR)
 {
-    float buffer[3];
-    float result[3];
-    vector.GetBuffer(buffer);
-    NormalizeVector(buffer, result);
-    vector.SetBuffer(result);
+    float anglesBuffer[3];
+    float forwardBuffer[3];
+    float rightBuffer[3];
+    float upBuffer[3];
+
+    angles.GetBuffer(anglesBuffer);
+    forwardVector.GetBuffer(forwardBuffer);
+    if (right != INVALID_VECTOR)
+        right.GetBuffer(rightBuffer);
+    if (up != INVALID_VECTOR)
+        up.GetBuffer(upBuffer);
+
+    GetAngleVectors(anglesBuffer, forwardBuffer, rightBuffer, upBuffer);
+
+    forwardVector.SetBuffer(forwardBuffer);
+    if (right != INVALID_VECTOR)
+        right.SetBuffer(rightBuffer);
+    if (up != INVALID_VECTOR)
+        up.SetBuffer(upBuffer);
 }
 
-Vector GetVectorFromAddress(Address vector, bool global = true)
+stock Vector GetVectorFromAddress(Address vector, bool global = true)
 {
     float x = Dereference(vector);
     float y = Dereference(vector + view_as<Address>(0x04));
@@ -288,7 +309,7 @@ Vector GetVectorFromAddress(Address vector, bool global = true)
     return Vector(x, y, z, global);
 }
 
-void WriteToVector(Address block, Vector vector)
+stock void WriteToVector(Address block, Vector vector)
 {
     WriteToValue(block, vector.X);
     WriteToValue(block + view_as<Address>(0x04), vector.Y);

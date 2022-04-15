@@ -56,6 +56,7 @@ DHookSetup DHooks_CTFPlayerShared_AddCond;
 DHookSetup DHooks_CTFPlayerShared_RemoveCond;
 
 Handle SDKCall_CTFPlayer_TeamFortress_CalculateMaxSpeed;
+Handle SDKCall_CTFPlayerShared_Burn;
 
 Address CTFWeaponBase_m_flLastDeployTime;
 
@@ -65,9 +66,9 @@ Address CTFWeaponBase_m_flLastDeployTime;
 
 #include "methodmaps/mathlib/Vector.sp"
 #include "methodmaps/server/CBaseEntity.sp"
-#include "methodmaps/shared/CTFPlayerShared.sp"
 #include "methodmaps/shared/CEconEntity.sp"
 #include "methodmaps/shared/CTFWeaponBase.sp"
+#include "methodmaps/shared/CTFPlayerShared.sp"
 #include "methodmaps/shared/CTFWearable.sp"
 #include "methodmaps/server/CTFPlayer.sp"
 #include "methodmaps/server/CTakeDamageInfo.sp"
@@ -188,6 +189,12 @@ public void OnPluginStart()
     PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
     PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
     SDKCall_CTFPlayer_TeamFortress_CalculateMaxSpeed = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Raw);
+    PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CTFPlayerShared::Burn");
+    PrepSDKCall_AddParameter(SDKType_CBasePlayer, SDKPass_Pointer);
+    PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+    PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
+    SDKCall_CTFPlayerShared_Burn = EndPrepSDKCall();
     
     // Offsets.
     CTFWeaponBase_m_flLastDeployTime = view_as<Address>(GameConfGetOffset(config, "CTFWeaponBase::m_flLastDeployTime"));
@@ -401,13 +408,7 @@ MRESReturn OnTakeDamage(int entity, DHookReturn returnValue, DHookParam paramete
 
     // Return between 4 and 2 HP with the Pretty Boy's Pocket Pistol, from a range of 0 to 512 HU.
     if (info.m_hWeapon.ItemDefinitionIndex == 773)
-    {
-        Vector start = info.m_hAttacker.GetAbsOrigin();
-        Vector end = victim.GetAbsOrigin();
-        info.m_hAttacker.Heal(RoundToCeil(RemapValClamped((start - end).Length(), 0.00, 512.00, 4.00, 2.00)));
-        start.Dispose();
-        end.Dispose();
-    }
+        info.m_hAttacker.Heal(RoundToCeil(RemapValClamped((info.m_hAttacker.GetAbsOrigin(.global = true) - victim.GetAbsOrigin(.global = true)).Length(), 0.00, 512.00, 4.00, 2.00)));
 
     // Give a 50% damage bonus with the Flying Guillotine on stunned targets.
     if ((info.m_hWeapon.ItemDefinitionIndex == 812 || info.m_hWeapon.ItemDefinitionIndex == 833) && victim.Stunned)
@@ -433,6 +434,10 @@ MRESReturn OnTakeDamage(int entity, DHookReturn returnValue, DHookParam paramete
             victim.m_Shared.StunPlayer(duration, 0.5, TF_STUN_CONTROLS | TF_STUN_SPECIAL_SOUND, info.m_hAttacker);
         }
     }
+
+    // Deal crits on burning players with the Sun-on-a-Stick.
+    if (info.m_hWeapon.ItemDefinitionIndex == 349 && !(info.m_bitsDamageType & DMG_BURN) && victim.m_Shared.InCond(TFCond_OnFire))
+        info.SetCritType(victim, CRIT_FULL);
      
     return MRES_Ignored;
 }
@@ -451,6 +456,25 @@ MRESReturn OnTakeDamagePost(int entity, DHookReturn returnValue, DHookParam para
             victim.m_Shared.m_flBurnDuration = min(currentLength, 3.0);
         else
             victim.m_Shared.m_flBurnDuration = 1.0; // The Degreaser afterburn duration initially only lasts 1.0s.
+    }
+
+    // Ignite players from the back with the Sun-on-a-Stick.
+    // this is so fucking stupid
+    if (info.m_hWeapon.ItemDefinitionIndex == 349 && !(info.m_bitsDamageType & DMG_BURN))
+    {
+        Vector toEnt = Vector();
+        toEnt.Assign(victim.GetAbsOrigin() - info.m_hAttacker.GetAbsOrigin());
+        toEnt.Z = 0.00;
+        toEnt.NormalizeInPlace();
+        
+        Vector entForward;
+        AngleVectors(victim.EyeAngles(), entForward);
+        
+        if (toEnt.Dot(entForward) > 0.00) // 90 degrees from center (total of 180)
+        {
+            victim.m_Shared.Burn(info.m_hAttacker, info.m_hWeapon, 1.5);
+            victim.m_Shared.m_flBurnDuration = 1.5; // Prevent stacking with the afterburn duration.
+        }
     }
 
     return MRES_Ignored;

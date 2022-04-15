@@ -149,9 +149,9 @@ methodmap CBaseEntity
     {
         return StrEqual(cbaseentities[this].class, other);
     }
-    public Vector GetAbsOrigin(bool center = true)
+    public Vector GetAbsOrigin(bool center = true, bool global = true)
     {
-        Vector absOrigin = this.GetMemberVector(Prop_Data, "m_vecAbsOrigin");
+        Vector absOrigin = this.GetMemberVector(Prop_Data, "m_vecAbsOrigin", .global = global);
         if (center)
         {
             Vector mins = this.GetMemberVector(Prop_Send, "m_vecMins", .global = true);

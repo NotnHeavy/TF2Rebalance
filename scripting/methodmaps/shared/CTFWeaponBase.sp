@@ -70,8 +70,10 @@ methodmap CTFWeaponBase < CEconEntity
             {
                 // Remove old attributes.
                 this.setAttribute("damage penalty", 1.00); // -0% damage penalty
+                this.setAttribute("crit vs burning players", 0.00); // 100% critical hit vs burning players. Dealt with internally.
 
                 // Apply new attributes.
+                this.setAttribute("fire rate penalty", 1.20); // -20% slower firing speed
                 this.setAttribute("dmg penalty vs nonburning", 0.50); // -50% damage vs non-burning players
                 this.setAttribute("crit mod disabled", 0.00); // No random critical hits
             }
