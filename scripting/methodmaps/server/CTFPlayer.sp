@@ -340,12 +340,24 @@ methodmap CTFPlayer < CBaseEntity
         if (ctfplayers[this].shownWelcomeMenu)
             return;
         ctfplayers[this].shownWelcomeMenu = true;
+        char buffer[256];
+
         Panel menu = new Panel();
         menu.SetTitle("Welcome to NotnHeavy's TF2Rebalance server!");
         menu.DrawText("Use !loadout (/loadout for silenced command) to check your loadout!");
         menu.DrawText("I am still working on rebalances though!");
+        menu.DrawText(" ");
+        
+        Format(buffer, sizeof(buffer), "Random crits: %s", tf_weapon_criticals.IntValue ? "off" : "on");
+        menu.DrawText(buffer);
+        Format(buffer, sizeof(buffer), "Random bullet spread: %s", tf_use_fixed_weaponspreads.IntValue ? "on" : "off");
+        menu.DrawText(buffer);
+        Format(buffer, sizeof(buffer), "Random fall damage modifier: %s", notnheavy_tf2rebalance_use_fixed_falldamage.IntValue ? "on" : "off");
+        menu.DrawText(buffer);
+
         menu.DrawItem("Exit", ITEMDRAW_CONTROL);
         menu.Send(this.Index, ShowWelcomeMenuAction, 15);
+
         delete menu;
     }
     public bool IsPlayerBehind(CTFPlayer other, float angle = 0.00)

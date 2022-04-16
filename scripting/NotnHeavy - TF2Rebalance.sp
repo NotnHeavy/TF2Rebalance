@@ -48,6 +48,9 @@
 static int pl_impact_stun_range_mutes = 0;
 
 static ConVar tf_scout_stunball_base_duration;
+ConVar tf_weapon_criticals;
+ConVar tf_use_fixed_weaponspreads;
+ConVar notnheavy_tf2rebalance_use_fixed_falldamage;
 
 DHookSetup DHooks_CObjectDispenser_DispenseAmmo;
 
@@ -56,6 +59,7 @@ DHookSetup DHooks_CTFPlayer_OnTakeDamage_Alive;
 DHookSetup DHooks_CTFPlayer_TeamFortress_CalculateMaxSpeed;
 DHookSetup DHooks_CTFPlayerShared_AddCond;
 DHookSetup DHooks_CTFPlayerShared_RemoveCond;
+DHookSetup DHooks_CTFGameRules_FlPlayerFallDamage;
 
 Handle SDKCall_CTFPlayer_TeamFortress_CalculateMaxSpeed;
 Handle SDKCall_CTFPlayer_GetMaxAmmo;
@@ -194,6 +198,7 @@ public void OnPluginStart()
     DHooks_CTFPlayerShared_AddCond = DHookCreateFromConf(config, "CTFPlayerShared::AddCond");
     DHooks_CTFPlayerShared_RemoveCond = DHookCreateFromConf(config, "CTFPlayerShared::RemoveCond");
     DHooks_CObjectDispenser_DispenseAmmo = DHookCreateFromConf(config, "CObjectDispenser::DispenseAmmo");
+    DHooks_CTFGameRules_FlPlayerFallDamage = DHookCreateFromConf(config, "CTFGameRules::FlPlayerFallDamage");
 
     DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage, false, OnTakeDamage);
     DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage, true, OnTakeDamagePost);
@@ -201,6 +206,7 @@ public void OnPluginStart()
     DHookEnableDetour(DHooks_CTFPlayer_TeamFortress_CalculateMaxSpeed, true, TeamFortress_CalculateMaxSpeed);
     DHookEnableDetour(DHooks_CTFPlayerShared_AddCond, false, AddCond);
     DHookEnableDetour(DHooks_CTFPlayerShared_RemoveCond, false, RemoveCond);
+    DHookEnableDetour(DHooks_CTFGameRules_FlPlayerFallDamage, true, FlPlayerFallDamage);
 
     // SDKCall.
     StartPrepSDKCall(SDKCall_Player);
@@ -228,6 +234,9 @@ public void OnPluginStart()
 
     // ConVars.
     tf_scout_stunball_base_duration = FindConVar("tf_scout_stunball_base_duration");
+    tf_weapon_criticals = FindConVar("tf_weapon_criticals");
+    tf_use_fixed_weaponspreads = FindConVar("tf_use_fixed_weaponspreads");
+    notnheavy_tf2rebalance_use_fixed_falldamage = CreateConVar("notnheavy_tf2rebalance_use_fixed_falldamage", "0.00", "Use fixed fall damage. This also applies to the Thermal Thruster/Mantreads stomp.", FCVAR_PROTECTED);
 
     // Hook onto entities.
     for (int i = 1; i <= MaxClients; ++i)
@@ -562,6 +571,25 @@ MRESReturn RemoveCond(Address thisPointer, DHookParam parameters)
         CTFWeaponBase weapon = client.GetActiveWeapon();
         if (weapon != INVALID_ENTITY)
             weapon.SetMember(Prop_Send, "m_fEffects", weapon.GetMember(Prop_Send, "m_fEffects") & ~EF_NODRAW);
+    }
+    return MRES_Ignored;
+}
+
+MRESReturn FlPlayerFallDamage(Address thisPointer, DHookReturn returnValue, DHookParam parameters)
+{
+    CTFPlayer pPlayer = parameters.Get(1);
+    if (returnValue.Value != 0.00 && notnheavy_tf2rebalance_use_fixed_falldamage.IntValue) // Re-calculate the fall damage, albeit without the randomness. Code taken from CTFGameRules::FlPlayerFallDamage.
+    {
+        // Old TFC damage formula
+        float flFallDamage = 5 * (pPlayer.GetMemberFloat(Prop_Send, "m_flFallVelocity") / 300);
+
+        // Fall damage needs to scale according to the player's max health, or
+        // it's always going to be much more dangerous to weaker classes than larger.
+        float flRatio = pPlayer.GetMember(Prop_Data, "m_iMaxHealth") / 100.0;
+        flFallDamage *= flRatio;
+
+        returnValue.Value = flFallDamage;
+        return MRES_Override;
     }
     return MRES_Ignored;
 }
