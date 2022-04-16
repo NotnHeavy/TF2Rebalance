@@ -236,7 +236,7 @@ public void OnPluginStart()
     tf_scout_stunball_base_duration = FindConVar("tf_scout_stunball_base_duration");
     tf_weapon_criticals = FindConVar("tf_weapon_criticals");
     tf_use_fixed_weaponspreads = FindConVar("tf_use_fixed_weaponspreads");
-    notnheavy_tf2rebalance_use_fixed_falldamage = CreateConVar("notnheavy_tf2rebalance_use_fixed_falldamage", "0.00", "Use fixed fall damage. This also applies to the Thermal Thruster/Mantreads stomp.", FCVAR_PROTECTED);
+    notnheavy_tf2rebalance_use_fixed_falldamage = CreateConVar("notnheavy_tf2rebalance_use_fixed_falldamage", "1.00", "Use fixed fall damage. This also applies to the Thermal Thruster/Mantreads stomp.", FCVAR_PROTECTED);
 
     // Hook onto entities.
     for (int i = 1; i <= MaxClients; ++i)

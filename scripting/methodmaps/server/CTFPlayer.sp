@@ -348,11 +348,11 @@ methodmap CTFPlayer < CBaseEntity
         menu.DrawText("I am still working on rebalances though!");
         menu.DrawText(" ");
         
-        Format(buffer, sizeof(buffer), "Random crits: %s", tf_weapon_criticals.IntValue ? "off" : "on");
+        Format(buffer, sizeof(buffer), "Random crits: %s", tf_weapon_criticals.IntValue ? "on" : "off");
         menu.DrawText(buffer);
-        Format(buffer, sizeof(buffer), "Random bullet spread: %s", tf_use_fixed_weaponspreads.IntValue ? "on" : "off");
+        Format(buffer, sizeof(buffer), "Random bullet spread: %s", tf_use_fixed_weaponspreads.IntValue ? "off" : "on");
         menu.DrawText(buffer);
-        Format(buffer, sizeof(buffer), "Random fall damage modifier: %s", notnheavy_tf2rebalance_use_fixed_falldamage.IntValue ? "on" : "off");
+        Format(buffer, sizeof(buffer), "Random fall damage modifier: %s", notnheavy_tf2rebalance_use_fixed_falldamage.IntValue ? "off" : "on");
         menu.DrawText(buffer);
 
         menu.DrawItem("Exit", ITEMDRAW_CONTROL);
