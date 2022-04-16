@@ -9,7 +9,12 @@
 				"windows" "407"
 				"linux"   "421"
 			}
-
+			
+			"CTFWeaponBase::GetMaxClip1"
+			{
+				"windows" "321"
+				"linux"   "327"
+			}
 			"CTFWeaponBase::m_flLastDeployTime"
 			{
 				"windows" "1764"

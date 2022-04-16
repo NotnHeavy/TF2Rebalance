@@ -28,6 +28,12 @@ methodmap CTFWeaponBase < CEconEntity
         public get() { return Dereference(this.Address + CTFWeaponBase_m_flLastDeployTime); }
         public set(float value) { WriteToValue(this.Address + CTFWeaponBase_m_flLastDeployTime, value); }
     }
+    public int GetMaxClip1()
+    {
+        if (!this.Exists)
+            return 0;
+        return SDKCall(SDKCall_CTFWeaponBase_GetMaxClip1, this.Index);
+    }
 
     // Public methods.
     public void ApplyNewAttributes()
@@ -79,7 +85,7 @@ methodmap CTFWeaponBase < CEconEntity
             }
 
             // Soldier primary.
-            case 414: // Liberty Launcher.
+            case 414: // Liberty Launcher.  TODO: fix bug with clip sometimes being 5
             {
                 // Remove old attributes.
                 this.setAttribute("damage penalty", 1.00); // -0% damage penalty

@@ -62,6 +62,8 @@ DHookSetup DHooks_CTFPlayerShared_AddCond;
 DHookSetup DHooks_CTFPlayerShared_RemoveCond;
 DHookSetup DHooks_CTFGameRules_FlPlayerFallDamage;
 
+Handle SDKCall_CTFWeaponBase_GetMaxClip1;
+
 Handle SDKCall_CTFPlayer_TeamFortress_CalculateMaxSpeed;
 Handle SDKCall_CTFPlayer_GetMaxAmmo;
 Handle SDKCall_CTFPlayerShared_Burn;
@@ -210,6 +212,11 @@ public void OnPluginStart()
     DHookEnableDetour(DHooks_CTFGameRules_FlPlayerFallDamage, true, FlPlayerFallDamage);
 
     // SDKCall.
+    StartPrepSDKCall(SDKCall_Entity);
+    PrepSDKCall_SetFromConf(config, SDKConf_Virtual, "CTFWeaponBase::GetMaxClip1");
+    PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+    SDKCall_CTFWeaponBase_GetMaxClip1 = EndPrepSDKCall();
+
     StartPrepSDKCall(SDKCall_Player);
     PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CTFPlayer::TeamFortress_CalculateMaxSpeed");
     PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);

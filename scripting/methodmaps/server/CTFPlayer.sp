@@ -175,7 +175,7 @@ methodmap CTFPlayer < CBaseEntity
         if (this == INVALID_ENTITY)
             return;
         for (int i = 0; i < MAX_WEAPONS; ++i)
-            ctfplayers[this].weapons[i] = view_as<CTFWeaponBase>(INVALID_ENTITY);
+            ctfplayers[this].weapons[i] = view_as<CEconEntity>(INVALID_ENTITY);
 
         // Iterate through weapons.
         for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Item2; ++i)
@@ -206,7 +206,7 @@ methodmap CTFPlayer < CBaseEntity
         for (int i = 0; i < MAX_WEAPONS; ++i)
         {
             CEconEntity entity = ctfplayers[this].weapons[i];
-            if (entity == view_as<CEconEntity>(0))
+            if (entity == INVALID_ENTITY)
                 break;
             if (entity.Exists && entity.ItemDefinitionIndex == itemDefinition)
                 return entity;
@@ -221,7 +221,7 @@ methodmap CTFPlayer < CBaseEntity
         for (int i = 0; i < MAX_WEAPONS; ++i)
         {
             CEconEntity entity = ctfplayers[this].weapons[i];
-            if (entity == view_as<CEconEntity>(0))
+            if (entity == INVALID_ENTITY)
                 break;
             if (entity.Exists && entity.ClassEquals(className))
                 return entity;
@@ -374,8 +374,16 @@ methodmap CTFPlayer < CBaseEntity
     }
     public void Regenerate()
     {
+        PrintToChatAll("HI!");
         for (int ammo = 0; ammo < view_as<int>(TF_AMMO_COUNT); ++ammo)
             this.SetAmmoCount(this.GetMaxAmmo(ammo), ammo);
+        for (int i = 0; i < MAX_WEAPONS; ++i)
+        {
+            CTFWeaponBase entity = ToTFWeaponBase(ctfplayers[this].weapons[i]);
+            if (entity == view_as<CTFWeaponBase>(INVALID_ENTITY))
+                break;
+            entity.SetMember(Prop_Send, "m_iClip1", entity.GetMaxClip1());
+        }
         this.TimeSinceSwitchFromNoAmmoWeapon = 0.00;
     }
 }
