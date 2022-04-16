@@ -51,6 +51,7 @@ static ConVar tf_scout_stunball_base_duration;
 ConVar tf_weapon_criticals;
 ConVar tf_use_fixed_weaponspreads;
 ConVar notnheavy_tf2rebalance_use_fixed_falldamage;
+bool initiatedConVars;
 
 DHookSetup DHooks_CObjectDispenser_DispenseAmmo;
 
@@ -237,6 +238,7 @@ public void OnPluginStart()
     tf_weapon_criticals = FindConVar("tf_weapon_criticals");
     tf_use_fixed_weaponspreads = FindConVar("tf_use_fixed_weaponspreads");
     notnheavy_tf2rebalance_use_fixed_falldamage = CreateConVar("notnheavy_tf2rebalance_use_fixed_falldamage", "1.00", "Use fixed fall damage. This also applies to the Thermal Thruster/Mantreads stomp.", FCVAR_PROTECTED);
+    initiatedConVars = true;
 
     // Hook onto entities.
     for (int i = 1; i <= MaxClients; ++i)

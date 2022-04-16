@@ -352,7 +352,7 @@ methodmap CTFPlayer < CBaseEntity
         menu.DrawText(buffer);
         Format(buffer, sizeof(buffer), "Random bullet spread: %s", tf_use_fixed_weaponspreads.IntValue ? "off" : "on");
         menu.DrawText(buffer);
-        Format(buffer, sizeof(buffer), "Random fall damage modifier: %s", notnheavy_tf2rebalance_use_fixed_falldamage.IntValue ? "off" : "on");
+        Format(buffer, sizeof(buffer), "Random fall damage modifier: %s", !initiatedConVars || notnheavy_tf2rebalance_use_fixed_falldamage.IntValue ? "off" : "on");
         menu.DrawText(buffer);
 
         menu.DrawItem("Exit", ITEMDRAW_CONTROL);
