@@ -77,8 +77,37 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("dmg penalty vs nonburning", 0.50); // -50% damage vs non-burning players
                 this.setAttribute("crit mod disabled", 0.00); // No random critical hits
             }
+
+            // Soldier primary.
+            case 414: // Liberty Launcher.
+            {
+                // Remove old attributes.
+                this.setAttribute("damage penalty", 1.00); // -0% damage penalty
+                this.setAttribute("clip size bonus", 1.00); // +0% clip size
+                this.setAttribute("rocket jump damage reduction", 1.00); // -25% blast damage from rocket jumps
+
+                // Apply new attributes.
+                this.setAttribute("clip size penalty", 0.75); // -25% clip size
+                this.setAttribute("switch from wep deploy time decreased", 0.90); // This weapon holsters 10% faster
+                this.setAttribute("single wep deploy time decreased", 0.80); // This weapon deploys 20% faster
+            }
+            case 730: // Beggar's Bazooka.
+            {
+                // Apply new attributes.
+                this.setAttribute("Blast radius decreased", 0.75); // -25% explosive radius
+            }
+            case 1104: // Air Strike.
+            {
+                // Apply new attributes.
+                this.setAttribute("rocket jump damage reduction", 0.75); // -25% blast damage from rocket jumps
+            }
             
-            // Pyro.
+            // Pyro primary.
+            case 40: // Backburner.
+            {
+                // Remove old attributes.
+                this.setAttribute("mod flamethrower back crit", 0.00);
+            }
             case 215: // Degreaser.
             {
                 // Remove old attributes.
@@ -91,7 +120,7 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("deploy time decreased", 0.5); // 50% faster weapon switch
             }
 
-            // Demoman.
+            // Demoman melee.
             case 307: // Ullapool Caber.
             {
                 // Remove old attributes.
@@ -100,6 +129,11 @@ methodmap CTFWeaponBase < CEconEntity
                 // Apply new attributes.
                 this.setAttribute("deploy time increased", 1.35); // 35% longer weapon switch
             }
+        }
+        if (this.ClassEquals("tf_weapon_jar")) // Jarate.
+        {
+            // Apply new attributes.
+            this.setAttribute("allowed in medieval mode", 1.00); // allowed_in_medieval_mode
         }
     }
 }

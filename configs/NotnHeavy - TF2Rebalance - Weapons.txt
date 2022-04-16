@@ -54,7 +54,33 @@ They cannot strafe out of this."
         "change" "- No random critical hits."
     }
 
+    // Soldier primaries.
+    "414"
+    {
+        "name"   "Liberty Launcher"
+        "change" "+ Deploying is now 20% faster and holstering is now 10% faster."
+        "change" "+ Removed the 25% damage penalty."
+        "change" "- Removed the 25% rocket jump self damage reduction."
+        "change" "- Replaced the 25% clip bonus with a 25% clip reduction."
+    }
+    "730"
+    {
+        "name"   "Beggar's Bazooka"
+        "change" "- Increased the radius penalty from 20% to 25%."
+        "change" "- You cannot get any ammo from dispensers while equipped or 10 seconds after switching."
+    }
+    "1104"
+    {
+        "name"   "Air Strike"
+        "change" "+ Decreased the rocket jump self damage from 15% to 25%."
+    }
+
     // Pyro primaries.
+    "40"
+    {
+        "name"   "Backburner"
+        "change" "+ Improved back detection."
+    }
     "215"
     {
         "name"   "Degreaser"
@@ -82,5 +108,12 @@ ignite players until the player is no longer burning."
 a ramp-up of 10% (83 damage). On average the Caber can deal 132-135 damage to your primary target."
         "change" "+/- This weapon no longer has a 100% deploy speed penalty, but it now has a 35%
 longer weapon switch."
+    }
+
+    // Sniper secondaries
+    "tf_weapon_jar"
+    {
+        "name"   "Jarate"
+        "change" "+ This weapon is now allowed in medieval mode."
     }
 }

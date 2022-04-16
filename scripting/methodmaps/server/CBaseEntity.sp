@@ -43,6 +43,10 @@ methodmap CBaseEntity
         // SDKHooks.
         SDKHook(index, SDKHook_Touch, EntityTouch);
 
+        // DHooks.
+        if (StrEqual(cbaseentities[index].class, "prop_physics_override") || StrEqual(cbaseentities[index].class, "obj_dispenser"))
+            DHookEntity(DHooks_CObjectDispenser_DispenseAmmo, false, index, _, DispenseAmmo);
+
         return view_as<CBaseEntity>(index);
     }
     property int Index
@@ -67,12 +71,6 @@ methodmap CBaseEntity
     {
         return view_as<CBaseEntity>(GetEntPropEnt(this.Index, type, buffer, offset));
     }
-    /*
-    public void GetMemberVector(PropType type, char[] buffer, float[3] vector, int offset = 0)
-    {
-        GetEntPropVector(this.Index, type, buffer, vector, offset);
-    }
-    */
     public Vector GetMemberVector(PropType type, char[] buffer, int offset = 0, bool global = false)
     {
         float vector[3];

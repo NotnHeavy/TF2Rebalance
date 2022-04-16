@@ -28,6 +28,8 @@ enum struct ctfplayerData
 // PUBLIC                                                                   //
 //////////////////////////////////////////////////////////////////////////////
 
+    float timeSinceSwitchFromNoAmmoWeapon;
+
     // Projectiles.
     CBaseEntity lastProjectileEncountered;
 
@@ -82,8 +84,25 @@ methodmap CTFPlayer < CBaseEntity
         GetClientEyeAngles(this.Index, buffer);
         return Vector(buffer[0], buffer[1], buffer[2], global);
     }
+    public int GetMaxAmmo(int ammoIndex, int classIndex = -1)
+    {
+        return SDKCall(SDKCall_CTFPlayer_GetMaxAmmo, this.Index, ammoIndex, classIndex);
+    }
+    public void SetAmmoCount(int count, int ammoIndex)
+    {
+        this.SetMember(Prop_Send, "m_iAmmo", count, _, ammoIndex);
+    }
+    public CTFWeaponBase GetActiveWeapon()
+    {
+        return view_as<CTFWeaponBase>(this.GetMemberEntity(Prop_Send, "m_hActiveWeapon"));
+    }
 
     // Public properties.
+    property float TimeSinceSwitchFromNoAmmoWeapon
+    {
+        public get() { return ctfplayers[this].timeSinceSwitchFromNoAmmoWeapon; }
+        public set(float value) { ctfplayers[this].timeSinceSwitchFromNoAmmoWeapon = value; }
+    }
     property CBaseEntity LastProjectileEncountered
     {
         public get() { return ctfplayers[this].lastProjectileEncountered; }
@@ -328,6 +347,24 @@ methodmap CTFPlayer < CBaseEntity
         menu.DrawItem("Exit", ITEMDRAW_CONTROL);
         menu.Send(this.Index, ShowWelcomeMenuAction, 15);
         delete menu;
+    }
+    public bool IsPlayerBehind(CTFPlayer other, float angle = 0.00)
+    {
+        Vector toEnt = Vector();
+        toEnt.Assign(this.GetAbsOrigin() - other.GetAbsOrigin());
+        toEnt.Z = 0.00;
+        toEnt.NormalizeInPlace();
+        
+        Vector entForward;
+        AngleVectors(this.EyeAngles(), entForward);
+
+        return toEnt.Dot(entForward) > angle;
+    }
+    public void Regenerate()
+    {
+        for (int ammo = 0; ammo < view_as<int>(TF_AMMO_COUNT); ++ammo)
+            this.SetAmmoCount(this.GetMaxAmmo(ammo), ammo);
+        this.TimeSinceSwitchFromNoAmmoWeapon = 0.00;
     }
 }
 

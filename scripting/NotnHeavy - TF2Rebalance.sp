@@ -1,5 +1,5 @@
 // TODO: work on something similar to mini-crit impact sounds with the Flying Guillotine on stunned targets.
-// TODO: make menu containing all changes.
+// TODO (idk if i wanna do this): make the equalizer throwable that deals normal melee damage and knockback on right click. i think this'll be hilarious lol
 
 //////////////////////////////////////////////////////////////////////////////
 // MADE BY NOTNHEAVY. USES GPL-3, AS PER REQUEST OF SOURCEMOD               //
@@ -49,6 +49,8 @@ static int pl_impact_stun_range_mutes = 0;
 
 static ConVar tf_scout_stunball_base_duration;
 
+DHookSetup DHooks_CObjectDispenser_DispenseAmmo;
+
 DHookSetup DHooks_CTFPlayer_OnTakeDamage;
 DHookSetup DHooks_CTFPlayer_OnTakeDamage_Alive;
 DHookSetup DHooks_CTFPlayer_TeamFortress_CalculateMaxSpeed;
@@ -56,26 +58,30 @@ DHookSetup DHooks_CTFPlayerShared_AddCond;
 DHookSetup DHooks_CTFPlayerShared_RemoveCond;
 
 Handle SDKCall_CTFPlayer_TeamFortress_CalculateMaxSpeed;
+Handle SDKCall_CTFPlayer_GetMaxAmmo;
 Handle SDKCall_CTFPlayerShared_Burn;
 
 Address CTFWeaponBase_m_flLastDeployTime;
 
 //////////////////////////////////////////////////////////////////////////////
-// FIRST-PARTY INCLUDES                                                     //
-//////////////////////////////////////////////////////////////////////////////
-
-#include "methodmaps/mathlib/Vector.sp"
-#include "methodmaps/server/CBaseEntity.sp"
-#include "methodmaps/shared/CEconEntity.sp"
-#include "methodmaps/shared/CTFWeaponBase.sp"
-#include "methodmaps/shared/CTFPlayerShared.sp"
-#include "methodmaps/shared/CTFWearable.sp"
-#include "methodmaps/server/CTFPlayer.sp"
-#include "methodmaps/server/CTakeDamageInfo.sp"
-
-//////////////////////////////////////////////////////////////////////////////
 // TF2 CODE                                                                 //
 //////////////////////////////////////////////////////////////////////////////
+
+enum ETFAmmoType
+{
+	TF_AMMO_DUMMY = 0,	// Dummy index to make the CAmmoDef indices correct for the other ammo types.
+	TF_AMMO_PRIMARY,
+	TF_AMMO_SECONDARY,
+	TF_AMMO_METAL,
+	TF_AMMO_GRENADES1,
+	TF_AMMO_GRENADES2,
+	TF_AMMO_GRENADES3,	// Utility Slot Grenades
+	TF_AMMO_COUNT,
+
+	//
+	// ADD NEW ITEMS HERE TO AVOID BREAKING DEMOS
+	//
+};
 
 /*
 TFCond g_aDebuffConditions[] =
@@ -110,6 +116,18 @@ float clamp(float val, float minVal, float maxVal)
 		return val;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// FIRST-PARTY INCLUDES                                                     //
+//////////////////////////////////////////////////////////////////////////////
+
+#include "methodmaps/mathlib/Vector.sp"
+#include "methodmaps/server/CBaseEntity.sp"
+#include "methodmaps/shared/CEconEntity.sp"
+#include "methodmaps/shared/CTFWeaponBase.sp"
+#include "methodmaps/shared/CTFPlayerShared.sp"
+#include "methodmaps/shared/CTFWearable.sp"
+#include "methodmaps/server/CTFPlayer.sp"
+#include "methodmaps/server/CTakeDamageInfo.sp"
 
 //////////////////////////////////////////////////////////////////////////////
 // UTILITY                                                                  //
@@ -175,6 +193,7 @@ public void OnPluginStart()
     DHooks_CTFPlayer_TeamFortress_CalculateMaxSpeed = DHookCreateFromConf(config, "CTFPlayer::TeamFortress_CalculateMaxSpeed");
     DHooks_CTFPlayerShared_AddCond = DHookCreateFromConf(config, "CTFPlayerShared::AddCond");
     DHooks_CTFPlayerShared_RemoveCond = DHookCreateFromConf(config, "CTFPlayerShared::RemoveCond");
+    DHooks_CObjectDispenser_DispenseAmmo = DHookCreateFromConf(config, "CObjectDispenser::DispenseAmmo");
 
     DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage, false, OnTakeDamage);
     DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage, true, OnTakeDamagePost);
@@ -189,6 +208,12 @@ public void OnPluginStart()
     PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
     PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
     SDKCall_CTFPlayer_TeamFortress_CalculateMaxSpeed = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Player);
+    PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CTFPlayer::GetMaxAmmo");
+    PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+    PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+    PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+    SDKCall_CTFPlayer_GetMaxAmmo = EndPrepSDKCall();
     StartPrepSDKCall(SDKCall_Raw);
     PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CTFPlayerShared::Burn");
     PrepSDKCall_AddParameter(SDKType_CBasePlayer, SDKPass_Pointer);
@@ -258,6 +283,7 @@ public Action PostClientInventoryReset(Event event, const char[] name, bool dont
     CTFPlayer client = view_as<CTFPlayer>(GetClientOfUserId(event.GetInt("userid")));
     client.TimeUntilSandmanStunEnd = 0.00;
     client.StructuriseWeaponList();
+    client.Regenerate();
     return Plugin_Continue;
 }
 
@@ -368,7 +394,11 @@ Action ClientDeployingWeapon(int clientIndex, int weaponIndex)
     CTFPlayer player = view_as<CTFPlayer>(clientIndex);
     CTFWeaponBase lastWeapon = ToTFWeaponBase(player.GetMemberEntity(Prop_Send, "m_hLastWeapon"));
     if (lastWeapon != INVALID_ENTITY) // Always force weapons to have the previous weapon's holster speed attribute applied.
+    {
         lastWeapon.m_flLastDeployTime = 0.00;
+        if (lastWeapon.ItemDefinitionIndex == 730)
+            player.TimeSinceSwitchFromNoAmmoWeapon = GetGameTime();
+    }
     return Plugin_Continue;
 }
 
@@ -383,6 +413,17 @@ void ClientEquippedWeapon(int index, int weapon)
 // DHOOKS                                                                   //
 //////////////////////////////////////////////////////////////////////////////
 
+MRESReturn DispenseAmmo(int entity, DHookReturn returnValue, DHookParam parameters)
+{
+    CTFPlayer player = parameters.Get(1);
+    if (player.GetActiveWeapon().ItemDefinitionIndex == 730 || player.TimeSinceSwitchFromNoAmmoWeapon + 10.00 > GetGameTime()) // Do not give ammo to players with the Beggar's Bazooka while equipping it less than 10 seconds after switching from it.
+    {
+        returnValue.Value = false;
+        return MRES_Supercede;
+    }
+    return MRES_Ignored;
+}
+
 MRESReturn OnTakeDamage(int entity, DHookReturn returnValue, DHookParam parameters)
 {
     CTakeDamageInfo info = view_as<CTakeDamageInfo>(parameters.Get(1));
@@ -391,7 +432,7 @@ MRESReturn OnTakeDamage(int entity, DHookReturn returnValue, DHookParam paramete
         return MRES_Ignored;
 
     // Always mini-crit with the shield while charging and the next melee crit is CRIT_MINI. This allows the Caber to also mini-crit.
-    if (info.m_hAttacker.GetMember(Prop_Send, "m_iNextMeleeCrit") == 1 && info.m_hAttacker.GetMemberEntity(Prop_Send, "m_hActiveWeapon") == info.m_hAttacker.GetWeaponFromSlot(TFWeaponSlot_Melee))
+    if (info.m_hAttacker.GetMember(Prop_Send, "m_iNextMeleeCrit") == 1 && info.m_hAttacker.GetActiveWeapon() == info.m_hAttacker.GetWeaponFromSlot(TFWeaponSlot_Melee))
         info.SetCritType(victim, CRIT_MINI);
 
     // Buff the Caber self-explosive damage by 10%. Also rewrote the explosive damage ramp-up since it's currently finnicky.
@@ -438,6 +479,10 @@ MRESReturn OnTakeDamage(int entity, DHookReturn returnValue, DHookParam paramete
     // Deal crits on burning players with the Sun-on-a-Stick.
     if (info.m_hWeapon.ItemDefinitionIndex == 349 && !(info.m_bitsDamageType & DMG_BURN) && victim.m_Shared.InCond(TFCond_OnFire))
         info.SetCritType(victim, CRIT_FULL);
+
+    // Deal crits on behind with the Backburner.
+    if (info.m_hWeapon.ItemDefinitionIndex == 40 && victim.IsPlayerBehind(info.m_hAttacker, 0.50) && info.m_bitsDamageType & DMG_IGNITE)
+        info.SetCritType(victim, CRIT_FULL);
      
     return MRES_Ignored;
 }
@@ -462,15 +507,7 @@ MRESReturn OnTakeDamagePost(int entity, DHookReturn returnValue, DHookParam para
     // this is so fucking stupid
     if (info.m_hWeapon.ItemDefinitionIndex == 349 && !(info.m_bitsDamageType & DMG_BURN))
     {
-        Vector toEnt = Vector();
-        toEnt.Assign(victim.GetAbsOrigin() - info.m_hAttacker.GetAbsOrigin());
-        toEnt.Z = 0.00;
-        toEnt.NormalizeInPlace();
-        
-        Vector entForward;
-        AngleVectors(victim.EyeAngles(), entForward);
-        
-        if (toEnt.Dot(entForward) > 0.00) // 90 degrees from center (total of 180)
+        if (victim.IsPlayerBehind(info.m_hAttacker))
         {
             victim.m_Shared.Burn(info.m_hAttacker, info.m_hWeapon, 1.5);
             victim.m_Shared.m_flBurnDuration = 1.5; // Prevent stacking with the afterburn duration.
@@ -522,7 +559,7 @@ MRESReturn RemoveCond(Address thisPointer, DHookParam parameters)
 
     if (condition == TFCond_Dazed)
     {
-        CTFWeaponBase weapon = ToTFWeaponBase(client.GetMemberEntity(Prop_Send, "m_hActiveWeapon"));
+        CTFWeaponBase weapon = client.GetActiveWeapon();
         if (weapon != INVALID_ENTITY)
             weapon.SetMember(Prop_Send, "m_fEffects", weapon.GetMember(Prop_Send, "m_fEffects") & ~EF_NODRAW);
     }

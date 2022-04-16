@@ -2,6 +2,20 @@
 {
 	"tf"
 	{
+		"Offsets"
+		{
+			"CObjectDispenser::DispenseAmmo"
+			{
+				"windows" "407"
+				"linux"   "421"
+			}
+
+			"CTFWeaponBase::m_flLastDeployTime"
+			{
+				"windows" "1764"
+				"linux"   "1768"
+			}
+		}
 		"Signatures"
 		{
 			"CTFPlayer::OnTakeDamage"
@@ -21,6 +35,12 @@
 				"library" "server"
 				"windows" "\x55\x8B\xEC\x83\xEC\x18\x83\x3D\x2A\x2A\x2A\x2A\x00"
 				"linux"	  "@_ZNK9CTFPlayer30TeamFortress_CalculateMaxSpeedEb"
+			}
+			"CTFPlayer::GetMaxAmmo"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x8B\x45\x0C\x56\x57\x8B\xF9\x83\xF8\xFF"
+				"linux"   "@_ZN9CTFPlayer10GetMaxAmmoEii"
 			}
 
 			"CTFPlayerShared::AddCond"
@@ -42,16 +62,23 @@
 				"linux"   "@_ZN15CTFPlayerShared4BurnEP9CTFPlayerP13CTFWeaponBasef"
 			}
 		}
-		"Offsets"
-		{
-			"CTFWeaponBase::m_flLastDeployTime"
-			{
-				"windows" "1764"
-				"linux"   "1768"
-			}
-		}
 		"Functions"
 		{
+			"CObjectDispenser::DispenseAmmo"
+			{
+				"offset"   "CObjectDispenser::DispenseAmmo"
+				"hooktype" "entity"
+				"this"     "entity"
+				"return"   "bool"
+				"arguments"
+				{
+					"pPlayer"
+					{
+						"type" "cbaseentity"
+					}
+				}
+			}
+
 			"CTFPlayer::OnTakeDamage"
 			{
 				"signature"	"CTFPlayer::OnTakeDamage"
