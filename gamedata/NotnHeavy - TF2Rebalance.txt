@@ -2,6 +2,34 @@
 {
 	"tf"
 	{
+		"Addresses"
+        {
+            "g_pGameRules"
+            {
+                "windows"
+                {
+                    "signature" "CreateGameRulesObject"                
+                    "read"      "5"                    
+                }
+                "linux"
+                {
+                    "signature" "g_pGameRules"
+                }
+                "read" "0"
+            }
+
+			"CreateEnergyRing"
+			{
+				"windows"
+				{
+					"signature" "CTFProjectile_EnergyRing::Create"
+				}
+				"linux"
+				{
+					"signature" "CTFProjectile_EnergyRing::Create"
+				}
+			}
+        }
 		"Offsets"
 		{
 			"CObjectDispenser::DispenseAmmo"
@@ -20,9 +48,90 @@
 				"windows" "1764"
 				"linux"   "1768"
 			}
+			"CTFWeaponBase::m_pWeaponInfo"
+			{
+				"windows" "1712"
+				"linux"   "1716"
+			}
+			"CTFWeaponBase::m_iWeaponMode"
+			{
+				"windows" "1700"
+				"linux"   "1704"
+			}
+
+			"CTFWeaponInfo_m_WeaponData"
+			{
+				"windows" "1784"
+				"linux"   "1784"
+			}
+
+			"CTFJarGas::CreateJarProjectile"
+			{
+				"windows" "493"
+				"linux"   "500"
+			}
+
+			"CTFProjectile_Jar::Explode"
+			{
+				"windows" "232"
+				"linux"   "233"
+			}
+
+			"Memory_CreateEnergyRingVelocity"
+			{
+				"windows" "107"
+				"linux"   "138"
+			}
 		}
 		"Signatures"
 		{
+			"CreateGameRulesObject"
+            {
+                "library" "server"
+                "windows" "\x55\x8B\xEC\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC9\x74\x2A\x8B\x01\x6A\x01"
+            }
+
+            "g_pGameRules"
+            {
+                "library" "server"
+                "linux"   "@g_pGameRules"
+            }
+
+			"CTFProjectile_EnergyRing::Create"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x3C\x8D\x45\xD0"
+				"linux"   "@_ZN24CTFProjectile_EnergyRing6CreateEP16CTFWeaponBaseGunRK6VectorRK6QAngleffP11CBaseEntityS9_S2_S2_b"
+			}
+
+			"CBaseCombatWeapon::Deploy"
+			{
+				"library" "server"
+				"windows" "\x53\x56\x8B\x35\x2A\x2A\x2A\x2A\x8B\xD9\x57\x8B\xCE\x8B\x06\xFF\x50\x64\x8B\x3B"
+				"linux"   "@_ZN17CBaseCombatWeapon6DeployEv"
+			}
+
+			"CTFWeaponBase::Deploy"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x1C\x53\x56\x8B\xF1\x57"
+				"linux"   "@_ZN13CTFWeaponBase6DeployEv"
+			}
+
+			"CTFWeaponBaseGun::GetWeaponSpread"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x08\x56\x8B\xF1\x57\x6A\x01\x6A\x00"
+				"linux"   "@_ZN16CTFWeaponBaseGun15GetWeaponSpreadEv"
+			}
+
+			"CBaseObject::OnTakeDamage"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x0C\x53\x56\x57\x8B\xF9\x8B\x07\x8B\x80\x04\x01\x00\x00"
+				"linux"   "@_ZN11CBaseObject12OnTakeDamageERK15CTakeDamageInfo
+			}
+
 			"CTFPlayer::OnTakeDamage"
 			{
 				"library" "server"
@@ -73,6 +182,19 @@
 				"windows" "\x55\x8B\xEC\x51\x53\x56\x8B\x75\x08\x8B\xD9\x85\xF6\x0F\x84\x2A\x2A\x2A\x2A"
 				"linux"   "@_ZN12CTFGameRules18FlPlayerFallDamageEP11CBasePlayer"
 			}
+			"CTFGameRules::RadiusDamage"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x81\xEC\x24\x08\x00\x00"
+				"linux"	  "@_ZN12CTFGameRules12RadiusDamageER19CTFRadiusDamageInfo"
+			}
+
+			"CTFRadiusDamageInfo::CalculateFalloff"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x51\x56\x8B\xF1\x8B\x2A\x2A\x2A\x2A\x2A\x00\x04"
+				"linux"	  "@_ZN19CTFRadiusDamageInfo16CalculateFalloffEv"
+			}
 		}
 		"Functions"
 		{
@@ -90,7 +212,53 @@
 					}
 				}
 			}
+			"CTFProjectile_Jar::Explode"
+			{
+				"offset"   "CTFProjectile_Jar::Explode"
+				"hooktype" "entity"
+				"this"     "entity"
+				"return"   "void"
+				"arguments"
+				{
+					"pTrace"
+					{
+						"type" "int"
+					}
+					"intVal"
+					{
+						"type" "int"
+					}
+				}
+			}
 
+			"CTFWeaponBase::Deploy"
+			{
+				"signature"	"CTFWeaponBase::Deploy"
+				"callconv"	"thiscall"
+				"return"	"bool" 
+				"this"		"entity"
+			}
+			"CTFWeaponBaseGun::GetWeaponSpread"
+			{
+				"signature"	"CTFWeaponBaseGun::GetWeaponSpread"
+				"callconv"	"thiscall"
+				"return"	"float" 
+				"this"		"entity"
+			}
+			"CBaseObject::OnTakeDamage"
+			{
+				"signature"	"CBaseObject::OnTakeDamage"
+				"callconv"	"thiscall"
+				"return"	"int" 
+				"this"		"entity"
+				"arguments"
+				{
+					"info"
+					{
+						"type" "int"
+					}
+				}
+			}
 			"CTFPlayer::OnTakeDamage"
 			{
 				"signature"	"CTFPlayer::OnTakeDamage"

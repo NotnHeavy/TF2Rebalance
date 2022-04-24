@@ -28,6 +28,15 @@ methodmap CTFWeaponBase < CEconEntity
         public get() { return Dereference(this.Address + CTFWeaponBase_m_flLastDeployTime); }
         public set(float value) { WriteToValue(this.Address + CTFWeaponBase_m_flLastDeployTime, value); }
     }
+    property CTFWeaponInfo m_pWeaponInfo
+    {
+        public get() { return Dereference(this.Address + CTFWeaponBase_m_pWeaponInfo); }
+    }
+    property int m_iWeaponMode
+    {
+        public get() { return Dereference(this.Address + CTFWeaponBase_m_iWeaponMode); }
+        public set(int value) { WriteToValue(this.Address + CTFWeaponBase_m_iWeaponMode, value); }
+    }
     public int GetMaxClip1()
     {
         if (!this.Exists)
@@ -85,7 +94,7 @@ methodmap CTFWeaponBase < CEconEntity
             }
 
             // Soldier primary.
-            case 414: // Liberty Launcher.  TODO: fix bug with clip sometimes being 5
+            case 414: // Liberty Launcher.
             {
                 // Remove old attributes.
                 this.setAttribute("damage penalty", 1.00); // -0% damage penalty
@@ -99,13 +108,23 @@ methodmap CTFWeaponBase < CEconEntity
             }
             case 730: // Beggar's Bazooka.
             {
+                // Remove old attributes.
+                this.setAttribute("Blast radius decreased", 1.00); // -0% explosive radius
+
                 // Apply new attributes.
-                this.setAttribute("Blast radius decreased", 0.75); // -25% explosive radius
+                this.setAttribute("damage penalty", 0.80); // -20% damage penalty
             }
-            case 1104: // Air Strike.
+            case 1104: // Air Strike. TODO: re-write damage distance mod calculation to be based upon rocket position.
             {
                 // Apply new attributes.
                 this.setAttribute("rocket jump damage reduction", 0.75); // -25% blast damage from rocket jumps
+            }
+
+            // Soldier melee.
+            case 416: // Market Gardener.
+            {
+                // Apply new attributes.
+                this.setAttribute("single wep holster time increased", 1.35); // This weapon holsters 35% slower
             }
             
             // Pyro primary.
@@ -134,6 +153,13 @@ methodmap CTFWeaponBase < CEconEntity
 
                 // Apply new attributes.
                 this.setAttribute("deploy time increased", 1.35); // 35% longer weapon switch
+            }
+
+            // Engineer primary.
+            case 588: // Pomson 6000.
+            {
+                // Apply new attributes.
+                this.setAttribute("Reload time decreased", 0.75); // +25% faster reload time
             }
         }
         if (this.ClassEquals("tf_weapon_jar")) // Jarate.

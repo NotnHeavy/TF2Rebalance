@@ -7,6 +7,7 @@
 
 #define MAX_ENTITY_COUNT 2048
 #define INVALID_ENTITY view_as<CBaseEntity>(-1)
+#define ENTITY_NULL view_as<CBaseEntity>(0)
 
 //////////////////////////////////////////////////////////////////////////////
 // CBASEENTITY DATA                                                         //
@@ -19,11 +20,14 @@ enum struct cbaseentityData
 //////////////////////////////////////////////////////////////////////////////
 
     CBaseEntity owner;
+    Vector spawnPosition;
     char class[MAX_NAME_LENGTH];
     float timestamp;
-
-    // Flying Guillotine.
-    float cleaverChargeMeter;
+    float rechargeTime;
+    
+    // Panic Attack.
+    float spreadMultiplier;
+    float lastShot;
 }
 static cbaseentityData cbaseentities[MAX_ENTITY_COUNT];
 
@@ -33,22 +37,6 @@ static cbaseentityData cbaseentities[MAX_ENTITY_COUNT];
 
 methodmap CBaseEntity
 {
-    // Constructor.
-    public CBaseEntity(int index)
-    {
-        // Set entity data.
-        cbaseentities[index].timestamp = GetGameTime();
-        GetEntityClassname(index, cbaseentities[index].class, MAX_NAME_LENGTH);
-
-        // SDKHooks.
-        SDKHook(index, SDKHook_Touch, EntityTouch);
-
-        // DHooks.
-        if (StrEqual(cbaseentities[index].class, "prop_physics_override") || StrEqual(cbaseentities[index].class, "obj_dispenser"))
-            DHookEntity(DHooks_CObjectDispenser_DispenseAmmo, false, index, _, DispenseAmmo);
-
-        return view_as<CBaseEntity>(index);
-    }
     property int Index
     {
         public get() { return view_as<int>(this); }
@@ -85,6 +73,12 @@ methodmap CBaseEntity
     {
         SetEntPropFloat(this.Index, type, buffer, value, offset);
     }
+    public void SetMemberVector(PropType type, char[] buffer, Vector value, int offset = 0)
+    {
+        float vector[3];
+        value.GetBuffer(vector);
+        SetEntPropVector(this.Index, type, buffer, vector, offset);
+    }
 
     // Public properties.
     property CBaseEntity Owner // TODO when methodmap declarations come out: return as CTFPlayer instead.
@@ -112,14 +106,29 @@ methodmap CBaseEntity
         }
         public set(CBaseEntity entity) { cbaseentities[this].owner = entity; }
     }
+    property Vector SpawnPosition
+    {
+        public get() { return cbaseentities[this].spawnPosition; }
+        public set(Vector value) { cbaseentities[this].spawnPosition = value; }
+    }
     property float Timestamp
     {
         public get() { return cbaseentities[this].timestamp; }
     }
-    property float CleaverChargeMeter
+    property float RechargeTime
     {
-        public get() { return cbaseentities[this].cleaverChargeMeter; }
-        public set(float value) { cbaseentities[this].cleaverChargeMeter = value; }
+        public get() { return cbaseentities[this].rechargeTime; }
+        public set(float value) { cbaseentities[this].rechargeTime = value; }
+    }
+    property float SpreadMultiplier
+    {
+        public get() { return cbaseentities[this].spreadMultiplier; }
+        public set(float value) { cbaseentities[this].spreadMultiplier = clamp(value, 1.00, 1.50); }
+    }
+    property float LastShot
+    {
+        public get() { return cbaseentities[this].lastShot; }
+        public set(float value) { cbaseentities[this].lastShot = value; }
     }
 
     // Property wrappers.
@@ -150,7 +159,7 @@ methodmap CBaseEntity
     public Vector GetAbsOrigin(bool center = true, bool global = true)
     {
         Vector absOrigin = this.GetMemberVector(Prop_Data, "m_vecAbsOrigin", .global = global);
-        if (center)
+        if (center && this.HasMember(Prop_Send, "m_vecMins"))
         {
             Vector mins = this.GetMemberVector(Prop_Send, "m_vecMins", .global = true);
             Vector maxs = this.GetMemberVector(Prop_Send, "m_vecMaxs", .global = true);
@@ -161,6 +170,16 @@ methodmap CBaseEntity
     public void SetRenderMode(RenderMode renderMode)
     {
         SetEntityRenderMode(this.Index, renderMode);
+    }
+    public void Remove()
+    {
+        RemoveEntity(this.Index);
+    }
+    public float HealthFraction()
+    {
+        if (this.GetMember(Prop_Data, "m_iMaxHealth") == 0)
+            return 1.0;
+        return clamp(float(this.GetMember(Prop_Data, "m_iHealth")) / float(this.GetMember(Prop_Data, "m_iMaxHealth")), 0.00, 1.00);
     }
 
     // CBaseEntity members.
@@ -175,6 +194,31 @@ methodmap CBaseEntity
     property bool IsBaseCombatWeapon
     {
         public get() { return this.ClassContains("tf_weapon") != -1;}
+    }
+
+    // Constructor.
+    public CBaseEntity(int index)
+    {
+        // Set entity data.
+        CBaseEntity entity = view_as<CBaseEntity>(index);
+        cbaseentities[index].timestamp = GetGameTime();
+        cbaseentities[index].rechargeTime = 0.00;
+        cbaseentities[index].spawnPosition.Dispose();
+        cbaseentities[index].spreadMultiplier = 1.00;
+        cbaseentities[index].lastShot = 0.00;
+        GetEntityClassname(index, cbaseentities[index].class, MAX_NAME_LENGTH);
+
+        // SDKHooks.
+        SDKHook(index, SDKHook_SpawnPost, EntitySpawn);
+        SDKHook(index, SDKHook_Touch, EntityTouch);
+
+        // DHooks.
+        if (StrEqual(cbaseentities[index].class, "prop_physics_override") || StrEqual(cbaseentities[index].class, "obj_dispenser"))
+            DHookEntity(DHooks_CObjectDispenser_DispenseAmmo, false, index, _, DispenseAmmo);
+        else if (StrEqual(cbaseentities[index].class, "tf_projectile_jar_gas"))
+            DHookEntity(DHooks_CTFProjectile_Jar_Explode, true, index, _, Explode);
+
+        return entity;
     }
 }
 

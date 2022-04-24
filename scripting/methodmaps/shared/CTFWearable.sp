@@ -27,6 +27,11 @@ methodmap CTFWearable < CEconEntity
     {
         switch (this.ItemDefinitionIndex)
         {
+            case 444: // Mantreads.
+            {
+                // Apply new attributes.
+                this.setAttribute("rocket jump damage reduction", 0.75); // -25% blast damage from rocket jumps
+            }
         }
     }
 }

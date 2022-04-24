@@ -5,6 +5,9 @@
 #pragma semicolon true 
 #pragma newdecls required
 
+#define FLT_MAX view_as<float>(0x7f7fffff)
+#define BASEDAMAGE_NOT_SPECIFIED FLT_MAX
+
 //////////////////////////////////////////////////////////////////////////////
 // CTAKEDAMAGEINFO DATA                                                     //
 //////////////////////////////////////////////////////////////////////////////
@@ -32,7 +35,9 @@ enum ctakedamageinfoOffsets
 
     flDamageForForce = 96,
 
-    eCritType = 100
+    eCritType = 100,
+
+    ctakedamageinfoSize = 104
 }
 
 enum ECritType
@@ -46,10 +51,9 @@ enum ECritType
 // CTAKEDAMAGEINFO METHODMAP                                                //
 //////////////////////////////////////////////////////////////////////////////
 
-methodmap CTakeDamageInfo
+methodmap CTakeDamageInfo < MemoryBlock
 {
-    // Constructor.
-    public CTakeDamageInfo(Address block)
+    public static CTakeDamageInfo FromAddress(Address block)
     {
         return view_as<CTakeDamageInfo>(block);
     }
@@ -57,7 +61,7 @@ methodmap CTakeDamageInfo
     {
         public get() { return view_as<Address>(this); }
     }
-
+    
     // CTakeDamageInfo members.
     property Vector m_vecDamageForce
     {
@@ -79,10 +83,10 @@ methodmap CTakeDamageInfo
         public get() { return view_as<CBaseEntity>(LoadEntityHandleFromAddress(this.Address + view_as<Address>(hInflictor))); }
         public set(CBaseEntity entity) { StoreEntityHandleToAddress(this.Address + view_as<Address>(hInflictor), entity.Index); }
     }
-    property CTFPlayer m_hAttacker
+    property CBaseEntity m_hAttacker
     {
         public get() { return view_as<CTFPlayer>(LoadEntityHandleFromAddress(this.Address + view_as<Address>(hAttacker))); }
-        public set(CTFPlayer player) { StoreEntityHandleToAddress(this.Address + view_as<Address>(hAttacker), player.Index); }
+        public set(CBaseEntity player) { StoreEntityHandleToAddress(this.Address + view_as<Address>(hAttacker), player.Index); }
     }
     property CTFWeaponBase m_hWeapon
     {
@@ -146,8 +150,8 @@ methodmap CTakeDamageInfo
     }
     property bool m_bForceFriendlyFire
     {
-        public get() { return Dereference(this.Address + view_as<Address>(bForceFriendlyFire)); }
-        public set(bool value) { WriteToValue(this.Address + view_as<Address>(bForceFriendlyFire), value); }
+        public get() { return Dereference(this.Address + view_as<Address>(bForceFriendlyFire), NumberType_Int8); }
+        public set(bool value) { WriteToValue(this.Address + view_as<Address>(bForceFriendlyFire), value, NumberType_Int8); }
     }
     
     property float m_flDamageForForce
@@ -179,5 +183,41 @@ methodmap CTakeDamageInfo
             victim.TakingMiniCritDamage = true;
         else
             victim.TakingMiniCritDamage = false;
+    }
+
+    // Constructor.
+    public CTakeDamageInfo(CBaseEntity inflictor, CBaseEntity attacker, CBaseEntity weapon, const Vector damageForce, const Vector damagePosition, float damage, int damageType, int killType, Vector reportedPosition)
+    {
+        MemoryBlock data = new MemoryBlock(ctakedamageinfoSize);
+        CTakeDamageInfo wrapper = CTakeDamageInfo.FromAddress(data.Address);
+
+        wrapper.m_hInflictor = inflictor;
+        if (attacker.Exists)
+            wrapper.m_hAttacker = attacker;
+        else
+            wrapper.m_hAttacker = inflictor;
+        
+        wrapper.m_hWeapon = view_as<CTFWeaponBase>(weapon);
+
+        wrapper.m_flDamage = damage;
+        
+        wrapper.m_flBaseDamage = BASEDAMAGE_NOT_SPECIFIED;
+
+        wrapper.m_bitsDamageType = damageType;
+        wrapper.m_iDamageCustom = killType;
+
+        wrapper.m_flMaxDamage = damage;
+        wrapper.m_vecDamageForce = damageForce;
+        wrapper.m_vecDamagePosition = damagePosition;
+        wrapper.m_vecReportedPosition = reportedPosition;
+        wrapper.m_iAmmoType = -1;
+        wrapper.m_iDamagedOtherPlayers = 0;
+        wrapper.m_iPlayerPenetrationCount = 0;
+        wrapper.m_flDamageBonus = 0.00;
+        wrapper.m_bForceFriendlyFire = false;
+        wrapper.m_flDamageForForce = 0.00;
+        wrapper.m_eCritType = CRIT_NONE;
+
+        return view_as<CTakeDamageInfo>(data);
     }
 }

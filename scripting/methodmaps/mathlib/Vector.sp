@@ -7,11 +7,14 @@
 
 // Also I'm just going to combine the functions for QAngles/Vectors into one methodmap.
 
+// NOTE: I may rewrite this code, with the addition of the SourceScramble extension. This code was written before I included that extension.
+
 #pragma semicolon true
 #pragma newdecls required
 
 #define GLOBAL_VECTOR_SIZE 64
 #define INVALID_VECTOR view_as<Vector>(-GLOBAL_VECTOR_SIZE - 1)
+#define VECTOR_NULL view_as<Vector>(0)
 
 //////////////////////////////////////////////////////////////////////////////
 // VECTOR DATA                                                              //
@@ -31,7 +34,10 @@ methodmap Vector
     public Vector(float x = 0.00, float y = 0.00, float z = 0.00, bool global = false)
     {
         if (vectorCollection == null)
+        {
             vectorCollection = new ArrayList(4, -1);
+            vectorCollection.PushArray({0.00, 0.00, 0.00, 0.00}); // vec_origin
+        }
 
         any buffer[4];
         buffer[0] = x;
@@ -71,6 +77,8 @@ methodmap Vector
     // Dispose the vector from the internal array list.
     public void Dispose()
     {
+        if (vectorCollection == null || this.Index < 0 || this.Index + 1 > vectorCollection.Length)
+            return;
         vectorCollection.Set(this.Index, INVALID_VECTOR, 3);
         for (int i = vectorCollection.Length - 1; i > -1; --i)
         {
@@ -317,8 +325,10 @@ stock void WriteToVector(Address block, Vector vector)
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// DEBUG                                                                    //
+// MISCELLANEOUS                                                            //
 //////////////////////////////////////////////////////////////////////////////
+
+stock Vector vec3_origin = VECTOR_NULL;
 
 stock void DebugVectors()
 {

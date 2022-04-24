@@ -66,13 +66,36 @@ They cannot strafe out of this."
     "730"
     {
         "name"   "Beggar's Bazooka"
-        "change" "- Increased the radius penalty from 20% to 25%."
+        "change" "+ Removed the radius penalty."
+        "change" "- Added a 20% damage penalty."
         "change" "- You cannot get any ammo from dispensers while equipped or 10 seconds after switching."
     }
     "1104"
     {
         "name"   "Air Strike"
         "change" "+ Decreased the rocket jump self damage from 15% to 25%."
+    }
+
+    // Soldier secondaries.
+    "442"
+    {
+        "name"   "Righteous Bison"
+        "change" "+ Increased the projectile speed by 150%."
+        "change" "+/- Removed player penetration in favour of single and high damage (60 base, 150% rampup, 
+50% fallof)."
+    }
+    "444"
+    {
+        "name"   "Mantreads"
+        "change" "+ 25% less blast damage from rocket jumps."
+        "change" "+ 50% fall damage reduction." 
+    }
+
+    // Soldier melees.
+    "416"
+    {
+        "name"   "Market Gardener"
+        "change" "- 35% slower holster speed."
     }
 
     // Pyro primaries.
@@ -87,9 +110,20 @@ They cannot strafe out of this."
         "change" "+ This weapon now boasts a 50% faster weapon switch, rather than 60% faster to,
 30% faster from."
         "change" "+/- The afterburn penalty has been removed. Instead, the afterburn duration
-initially only lasts 1s and can only ramp up to 3s. This also applies to other weapons that can
-ignite players until the player is no longer burning."
+initially only lasts 1s and can only ramp up to 3s. This also applies to other 
+weapons that can ignite players until the player is no longer burning."
         "change" "+ 35% damage penalty."
+    }
+
+    // Pyro melees.
+    "1180"
+    {
+        "name"   "Gas Passer"
+        "change" "+ This weapon now explodes on hit. The explosion deals 100 damage at a radius of
+200HU, with 50% falloff (not dependent upon distance between the projectile and 
+player)."
+        "change" "+ Shortened the recharge duration to 40s, or by 500 damage, however damage is not
+increased by the Gas Passer explosion."
     }
 
     // Pyro melees.
@@ -102,12 +136,24 @@ ignite players until the player is no longer burning."
     // Demoman melees.
     "307"
     {
-        "name" "Ullapool Caber"
+        "name"   "Ullapool Caber"
         "change" "+ This weapon now mini-crits with the shields."
         "change" "+ Re-wrote the explosive damage code, so it now deals a minimum of 75 damage, with
-a ramp-up of 10% (83 damage). On average the Caber can deal 132-135 damage to your primary target."
+a ramp-up of 10% (83 damage). On average the Caber can deal 132-135 damage to 
+your primary target."
         "change" "+/- This weapon no longer has a 100% deploy speed penalty, but it now has a 35%
 longer weapon switch."
+        "change" "- This weapon now does 10% more self damage."
+    }
+
+    // Engineer primaries.
+    "588"
+    {
+        "name"   "Pomson 6000"
+        "change" "This weapon is still undergoing changes."
+        "change" "+ Increased the projectile speed by 150%."
+        "change" "+ Rewrote the base damage to be 60, with a rampup of 150% and falloff of 50%."
+        "change" "+ Decreased the reload speed by 25%."
     }
 
     // Sniper secondaries
@@ -115,5 +161,27 @@ longer weapon switch."
     {
         "name"   "Jarate"
         "change" "+ This weapon is now allowed in medieval mode."
+    }
+
+    // Multi-class.
+    "415"
+    {
+        "name"   "Reserve Shooter"
+        "change" "+ 20% damage bonus vs. airblasted targets."
+        "change" "- 15% damage penalty vs. grounded targets."
+        "change" "- This weapon is not affected by global weapon switch speed bonuses."
+    }
+    "1101"
+    {
+        "name"   "B.A.S.E. Jumper"
+        "change" "+ The user now has 100% air control again."
+    }
+    "1153"
+    {
+        "name"   "Panic Attack"
+        "change" "- Re-wrote the consecutive shot spread mechanic. The spread worsens at the
+same rate, but rather than instantly go back to normal just by not firing or 
+switching weapons, the spread remains at its current state for 1.5s, then
+ramps back down in 1s."
     }
 }

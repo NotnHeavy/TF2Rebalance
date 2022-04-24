@@ -58,8 +58,8 @@ methodmap CTFPlayer < CBaseEntity
         CBaseEntity(index);
 
         // CTFPlayer code.
-        SDKHook(index, SDKHook_WeaponCanSwitchTo, ClientDeployingWeapon);
         SDKHook(index, SDKHook_WeaponEquipPost, ClientEquippedWeapon);
+        SDKHook(index, SDKHook_OnTakeDamage, ClientTookFallDamage);
         ctfplayers[index].shownWelcomeMenu = false;
 
         return view_as<CTFPlayer>(index);
@@ -136,11 +136,15 @@ methodmap CTFPlayer < CBaseEntity
     }
     property bool InGame
     {
-        public get() { return IsClientInGame(this.Index); }
+        public get() { return this.IsPlayer && IsClientInGame(this.Index); }
     }
     property bool Stunned
     {
         public get() { return TF2_IsPlayerInCondition(this.Index, TFCond_Dazed) || this.TimeUntilSandmanStunEnd > GetGameTime(); }
+    }
+    property TFClassType Class
+    {
+        public get() { return TF2_GetPlayerClass(this.Index); }
     }
 
     // Methods that should only be used within this class (private).
@@ -161,7 +165,7 @@ methodmap CTFPlayer < CBaseEntity
     // This would've been a part of another methodmap (IHasAttributes) but multiple inheritance is not a feature.
     public void setAttribute(const char[] attribute, float value)
     {
-        TF2Attrib_SetByName(view_as<int>(this), attribute, value);
+        TF2Attrib_SetByName(this.Index, attribute, value);
     }
 
     // Public methods.
@@ -303,6 +307,7 @@ methodmap CTFPlayer < CBaseEntity
                 }
                 if (pair.GotoFirstSubKey(false))
                 {
+                    bool forClass = true;
                     do
                     {
                         char key[256];
@@ -312,11 +317,21 @@ methodmap CTFPlayer < CBaseEntity
                         
                         if (StrEqual(key, "name"))
                             menu.SetTitle(value);
+                        else if (StrEqual(key, "class"))
+                        {
+                            TFClassType class = view_as<TFClassType>(StringToInt(value));
+                            if (this.Class != class)
+                            {
+                                forClass = false;
+                                break;
+                            }
+                        }
                         else
                             menu.DrawText(value);
                     } while (pair.GotoNextKey(false));
                     pair.GoBack();
-                    found = true;
+                    if (forClass)
+                        found = true;
                 }
             }
         } while (pair.GotoNextKey());
@@ -374,7 +389,6 @@ methodmap CTFPlayer < CBaseEntity
     }
     public void Regenerate()
     {
-        PrintToChatAll("HI!");
         for (int ammo = 0; ammo < view_as<int>(TF_AMMO_COUNT); ++ammo)
             this.SetAmmoCount(this.GetMaxAmmo(ammo), ammo);
         for (int i = 0; i < MAX_WEAPONS; ++i)

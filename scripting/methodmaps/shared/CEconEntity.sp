@@ -40,4 +40,19 @@ methodmap CEconEntity < CBaseEntity
             return GetEntProp(this.Index, Prop_Send, "m_iItemDefinitionIndex");
         }
     }
+
+    // Public methods.
+    public float GetAttribute(const char[] attribute)
+    {
+        Address address = TF2Attrib_GetByName(this.Index, attribute);
+        return address != Address_Null ? TF2Attrib_GetValue(address) : -1.00;
+    }
+    public void HookValueFloat(float& value, const char[] attribute)
+    {
+        value = TF2Attrib_HookValueFloat(value, attribute, this.Index);
+    }
+    public void HookValueInt(int& value, const char[] attribute)
+    {
+        value = TF2Attrib_HookValueInt(value, attribute, this.Index);
+    }
 }
