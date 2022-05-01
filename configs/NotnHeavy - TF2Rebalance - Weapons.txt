@@ -1,4 +1,4 @@
-// This config is used for the "showloadout" command.
+// This config is used for the "loadout" command.
 "WeaponChanges"
 {
     // Scout primaries.
@@ -60,6 +60,7 @@ They cannot strafe out of this."
         "name"   "Liberty Launcher"
         "change" "+ Deploying is now 20% faster and holstering is now 10% faster."
         "change" "+ Removed the 25% damage penalty."
+        "change" "- 25% radius penalty."
         "change" "- Removed the 25% rocket jump self damage reduction."
         "change" "- Replaced the 25% clip bonus with a 25% clip reduction."
     }
@@ -74,6 +75,8 @@ They cannot strafe out of this."
     {
         "name"   "Air Strike"
         "change" "+ Decreased the rocket jump self damage from 15% to 25%."
+        "change" "+/- The rampup/falloff mechanics are now based upon the rocket's spawn position. This
+change was made to weaken bombardments."
     }
 
     // Soldier secondaries.
@@ -112,17 +115,24 @@ They cannot strafe out of this."
         "change" "+/- The afterburn penalty has been removed. Instead, the afterburn duration
 initially only lasts 1s and can only ramp up to 3s. This also applies to other 
 weapons that can ignite players until the player is no longer burning."
-        "change" "+ 35% damage penalty."
+        "change" "- 35% damage penalty."
     }
 
-    // Pyro melees.
+    // Pyro secondaries.
+    "595"
+    {
+        "name"   "Manmelter"
+        "change" "+ This weapon now extinguishes enemy players."
+        "change" "- There is a 1s delay between extinguishing and firing."
+        "change" "- The crits cap has been changed from 35 to 3."
+    }
     "1180"
     {
         "name"   "Gas Passer"
         "change" "+ This weapon now explodes on hit. The explosion deals 100 damage at a radius of
 200HU, with 50% falloff (not dependent upon distance between the projectile and 
 player)."
-        "change" "+ Shortened the recharge duration to 40s, or by 500 damage, however damage is not
+        "change" "+ Shortened the recharge duration to 40s, or by 750 damage, however charge is not
 increased by the Gas Passer explosion."
     }
 
@@ -130,7 +140,18 @@ increased by the Gas Passer explosion."
     "38"
     {
         "name"   "Axtinguisher"
-        "change" "- The holster attribute is now independent of how long this weapon was equipped." // might implement macros for these configs, since i'm probably going to be repeating this elsewhere.
+        "change" "- The holster attribute is now independent of how long this weapon was equipped.
+It now also applies if the user switches from this weapon less than 0.5s after 
+holstering it."
+    }
+    "593"
+    {
+        "name"   "Third Degree"
+        "change" "+ Deals crits while the wielder is blast jumping."
+        "change" "+ 30% less self damage from the flare guns."
+        "change" "+ Players connected to the same dispenser or payload will also be damaged."
+        "change" "- 25% damage penalty."
+        "change" "- 35% slower holster speed."
     }
 
     // Demoman melees.
@@ -161,6 +182,13 @@ longer weapon switch."
     {
         "name"   "Jarate"
         "change" "+ This weapon is now allowed in medieval mode."
+    }
+
+    // Sniper secondaries.
+    "231"
+    {
+        "name"   "Dongle Schlonger"
+        "change" "I've yet to work on this, I just wanted to call the Darwin's Danger Shield this lol."
     }
 
     // Multi-class.

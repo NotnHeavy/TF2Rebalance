@@ -29,6 +29,7 @@ enum struct ctfplayerData
 //////////////////////////////////////////////////////////////////////////////
 
     float timeSinceSwitchFromNoAmmoWeapon;
+    CTFWeaponBase lastWeaponWithSlowHolster;
 
     // Projectiles.
     CBaseEntity lastProjectileEncountered;
@@ -39,6 +40,13 @@ enum struct ctfplayerData
     // Degreaser.
     bool onFire;
     bool fromDegreaser;
+
+    // Manmelter.
+    CBaseEntity originalBurner;
+    int revengeCrits;
+
+    // Third Degreee.
+    bool recursiveCheck;
 
     // Ullapool Caber.
     bool takingMiniCritDamage;
@@ -96,12 +104,21 @@ methodmap CTFPlayer < CBaseEntity
     {
         return view_as<CTFWeaponBase>(this.GetMemberEntity(Prop_Send, "m_hActiveWeapon"));
     }
+    public int GetUserID()
+    {
+        return GetClientUserId(this.Index);
+    }
 
     // Public properties.
     property float TimeSinceSwitchFromNoAmmoWeapon
     {
         public get() { return ctfplayers[this].timeSinceSwitchFromNoAmmoWeapon; }
         public set(float value) { ctfplayers[this].timeSinceSwitchFromNoAmmoWeapon = value; }
+    }
+    property CTFWeaponBase LastWeaponWithSlowHolster
+    {
+        public get() { return ctfplayers[this].lastWeaponWithSlowHolster; }
+        public set(CTFWeaponBase value) { ctfplayers[this].lastWeaponWithSlowHolster = value; }
     }
     property CBaseEntity LastProjectileEncountered
     {
@@ -122,6 +139,21 @@ methodmap CTFPlayer < CBaseEntity
     {
         public get() { return ctfplayers[this].fromDegreaser; }
         public set(bool toggle) { ctfplayers[this].fromDegreaser = toggle; }
+    }
+    property CBaseEntity OriginalBurner
+    {
+        public get() { return ctfplayers[this].originalBurner; }
+        public set(CBaseEntity value) { ctfplayers[this].originalBurner = value; }
+    }
+    property int RevengeCrits
+    {
+        public get() { return ctfplayers[this].revengeCrits; }
+        public set(int value) { ctfplayers[this].revengeCrits = value; }
+    }
+    property bool RecursiveCheck
+    {
+        public get() { return ctfplayers[this].recursiveCheck; }
+        public set(bool toggle) { ctfplayers[this].recursiveCheck = toggle; }
     }
     property bool TakingMiniCritDamage
     {
@@ -377,7 +409,7 @@ methodmap CTFPlayer < CBaseEntity
     }
     public bool IsPlayerBehind(CTFPlayer other, float angle = 0.00)
     {
-        Vector toEnt = Vector();
+        Vector toEnt = Vector(.global = true);
         toEnt.Assign(this.GetAbsOrigin() - other.GetAbsOrigin());
         toEnt.Z = 0.00;
         toEnt.NormalizeInPlace();
@@ -396,9 +428,31 @@ methodmap CTFPlayer < CBaseEntity
             CTFWeaponBase entity = ToTFWeaponBase(ctfplayers[this].weapons[i]);
             if (entity == view_as<CTFWeaponBase>(INVALID_ENTITY))
                 break;
+            
+            // Do not get max clip and start firing straight away with the Beggar's Bazooka.
+            int auto_fires_full_clip = 0;
+            entity.HookValueInt(auto_fires_full_clip, "auto_fires_full_clip");
+            if (auto_fires_full_clip)
+                continue;
+
             entity.SetMember(Prop_Send, "m_iClip1", entity.GetMaxClip1());
         }
         this.TimeSinceSwitchFromNoAmmoWeapon = 0.00;
+    }
+    
+    // These would've been a part of another methodmap (IHasAttributes) but multiple inheritance is not a feature, at least as of SM 1.10.
+    public float GetAttribute(const char[] attribute)
+    {
+        Address address = TF2Attrib_GetByName(this.Index, attribute);
+        return address != Address_Null ? TF2Attrib_GetValue(address) : -1.00;
+    }
+    public void HookValueFloat(float& value, const char[] attribute)
+    {
+        value = TF2Attrib_HookValueFloat(value, attribute, this.Index);
+    }
+    public void HookValueInt(int& value, const char[] attribute)
+    {
+        value = TF2Attrib_HookValueInt(value, attribute, this.Index);
     }
 }
 

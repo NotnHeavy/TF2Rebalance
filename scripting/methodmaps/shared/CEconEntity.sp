@@ -42,6 +42,7 @@ methodmap CEconEntity < CBaseEntity
     }
 
     // Public methods.
+    // These would've been a part of another methodmap (IHasAttributes) but multiple inheritance is not a feature, at least as of SM 1.10.
     public float GetAttribute(const char[] attribute)
     {
         Address address = TF2Attrib_GetByName(this.Index, attribute);

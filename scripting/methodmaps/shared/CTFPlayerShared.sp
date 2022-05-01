@@ -12,7 +12,8 @@
 enum ctfplayersharedOffsets
 {
     pOuter = 400,
-    flBurnDuration = 520
+    aHealers = 404,
+    flBurnDuration = 520,
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -35,6 +36,10 @@ methodmap CTFPlayerShared
     property CBaseEntity m_pOuter // TODO when methodmap declarations come out: return as CTFPlayer instead.
     {
         public get() { return GetCBaseEntityFromAddress(this.Address + view_as<Address>(pOuter)); }
+    }
+    property CUtlVector m_aHealers
+    {
+        public get() { return view_as<CUtlVector>(this.Address + view_as<Address>(aHealers)); }
     }
     property float m_flBurnDuration
     {
@@ -62,5 +67,9 @@ methodmap CTFPlayerShared
     public void Burn(CBaseEntity attacker, CTFWeaponBase weapon, float burningTime) // use ctfplayer when method declarations is a thing.
     {
         SDKCall(SDKCall_CTFPlayerShared_Burn, this.Address, attacker.Index, weapon.Index, burningTime);
+    }
+    public int GetNumHealers()
+    {
+        return this.m_pOuter.GetMember(Prop_Send, "m_nNumHealers");
     }
 }

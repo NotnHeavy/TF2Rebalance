@@ -43,6 +43,10 @@ methodmap CTFWeaponBase < CEconEntity
             return 0;
         return SDKCall(SDKCall_CTFWeaponBase_GetMaxClip1, this.Index);
     }
+    public int GetName()
+    {
+        return SDKCall(SDKCall_CBaseCombatWeapon_GetName, this.Index);
+    }
 
     // Public methods.
     public void ApplyNewAttributes()
@@ -103,6 +107,7 @@ methodmap CTFWeaponBase < CEconEntity
 
                 // Apply new attributes.
                 this.setAttribute("clip size penalty", 0.75); // -25% clip size
+                this.setAttribute("Blast radius decreased", 0.75); // -25% explosion radius
                 this.setAttribute("switch from wep deploy time decreased", 0.90); // This weapon holsters 10% faster
                 this.setAttribute("single wep deploy time decreased", 0.80); // This weapon deploys 20% faster
             }
@@ -143,6 +148,15 @@ methodmap CTFWeaponBase < CEconEntity
                 // Apply new attributes.
                 this.setAttribute("damage penalty", 0.65); // 35% damage penalty
                 this.setAttribute("deploy time decreased", 0.5); // 50% faster weapon switch
+            }
+
+            // Pyro melee.
+            case 593: // Third Degree.
+            {
+                // Apply new attributes.
+                this.setAttribute("damage penalty", 0.75); // 25% damage penalty
+                this.setAttribute("mod crit while airborne", 1.00); // Deals crits while the wielder is rocket jumping
+                this.setAttribute("single wep holster time increased", 1.35); // This weapon holsters 35% slower
             }
 
             // Demoman melee.

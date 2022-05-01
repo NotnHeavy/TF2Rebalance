@@ -32,10 +32,27 @@
         }
 		"Offsets"
 		{
+			"CBaseEntity::Deflected"
+			{
+				"windows" "156"
+				"linux"   "157"
+			}
+
 			"CObjectDispenser::DispenseAmmo"
 			{
 				"windows" "407"
 				"linux"   "421"
+			}
+			"CObjectDispenser::m_hHealingTargets"
+			{
+				"windows" "2716"
+				"linux"   "2736"
+			}
+
+			"CBaseCombatWeapon::GetName"
+			{
+				"windows" "332"
+				"linux"   "338"
 			}
 			
 			"CTFWeaponBase::GetMaxClip1"
@@ -90,12 +107,25 @@
                 "library" "server"
                 "windows" "\x55\x8B\xEC\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC9\x74\x2A\x8B\x01\x6A\x01"
             }
+			"ExtinguishPlayer"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\xD9\xEE\x83\xEC\x24\x53"
+				"linux"   "@_Z16ExtinguishPlayerP11CEconEntityP9CTFPlayerS2_PKc"
+			}
 
             "g_pGameRules"
             {
                 "library" "server"
                 "linux"   "@g_pGameRules"
             }
+
+			"CBaseEntity::TakeDamage"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x74\x57\x8B\xF9\x8B\x0D\x2A\x2A\x2A\x2A"
+				"linux"   "@_ZN11CBaseEntity10TakeDamageERK15CTakeDamageInfo"
+			}
 
 			"CTFProjectile_EnergyRing::Create"
 			{
@@ -125,11 +155,18 @@
 				"linux"   "@_ZN16CTFWeaponBaseGun15GetWeaponSpreadEv"
 			}
 
+			"CTFFlareGun_Revenge::ExtinguishPlayerInternal"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x53\x56\x57\x8B\x7D\x08\x8B\xD9\x8B\xCF\xE8\x2A\x2A\x2A\x2A"
+				"linux"   "@_ZN19CTFFlareGun_Revenge24ExtinguishPlayerInternalEP9CTFPlayerS1_"
+			}
+
 			"CBaseObject::OnTakeDamage"
 			{
 				"library" "server"
 				"windows" "\x55\x8B\xEC\x83\xEC\x0C\x53\x56\x57\x8B\xF9\x8B\x07\x8B\x80\x04\x01\x00\x00"
-				"linux"   "@_ZN11CBaseObject12OnTakeDamageERK15CTakeDamageInfo
+				"linux"   "@_ZN11CBaseObject12OnTakeDamageERK15CTakeDamageInfo"
 			}
 
 			"CTFPlayer::OnTakeDamage"
@@ -198,6 +235,24 @@
 		}
 		"Functions"
 		{
+			"CBaseEntity::Deflected"
+			{
+				"offset"   "CBaseEntity::Deflected"
+				"hooktype" "entity"
+				"this"     "entity"
+				"return"   "void"
+				"arguments"
+				{
+					"pDeflectedBy"
+					{
+						"type" "cbaseentity"
+					}
+					"vecDir"
+					{
+						"type" "vectorptr"
+					}
+				}
+			}
 			"CObjectDispenser::DispenseAmmo"
 			{
 				"offset"   "CObjectDispenser::DispenseAmmo"
@@ -244,6 +299,24 @@
 				"callconv"	"thiscall"
 				"return"	"float" 
 				"this"		"entity"
+			}
+			"CTFFlareGun_Revenge::ExtinguishPlayerInternal"
+			{
+				"signature"	"CTFFlareGun_Revenge::ExtinguishPlayerInternal"
+				"callconv"	"thiscall"
+				"return"	"bool" 
+				"this"		"entity"
+				"arguments"
+				{
+					"pTarget"
+					{
+						"type" "cbaseentity"
+					}
+					"pOwner"
+					{
+						"type" "cbaseentity"
+					}
+				}
 			}
 			"CBaseObject::OnTakeDamage"
 			{

@@ -65,11 +65,13 @@ ConVar tf_use_fixed_weaponspreads;
 ConVar notnheavy_tf2rebalance_use_fixed_falldamage;
 bool initiatedConVars;
 
+DHookSetup DHooks_CBaseEntity_Deflected;
 DHookSetup DHooks_CObjectDispenser_DispenseAmmo;
 DHookSetup DHooks_CTFProjectile_Jar_Explode;
 
 DHookSetup DHooks_CTFWeaponBase_Deploy;
 DHookSetup DHooks_CTFWeaponBaseGun_GetWeaponSpread;
+DHookSetup DHooks_CTFFlareGun_Revenge_ExtinguishPlayerInternal;
 DHookSetup DHooks_CBaseObject_OnTakeDamage;
 DHookSetup DHooks_CTFPlayer_OnTakeDamage;
 DHookSetup DHooks_CTFPlayer_OnTakeDamage_Alive;
@@ -78,9 +80,12 @@ DHookSetup DHooks_CTFPlayerShared_AddCond;
 DHookSetup DHooks_CTFPlayerShared_RemoveCond;
 DHookSetup DHooks_CTFGameRules_FlPlayerFallDamage;
 
+Handle SDKCall_CBaseCombatWeapon_GetName;
 Handle SDKCall_CTFWeaponBase_GetMaxClip1;
 
 Handle SDKCall_CBaseCombatWeapon_Deploy;
+Handle SDKCall_ExtinguishPlayer;
+Handle SDKCall_CBaseEntity_TakeDamage;
 Handle SDKCall_CTFPlayer_TeamFortress_CalculateMaxSpeed;
 Handle SDKCall_CTFPlayer_GetMaxAmmo;
 Handle SDKCall_CTFPlayerShared_Burn;
@@ -88,6 +93,7 @@ Handle SDKCall_CTFGameRules_FlPlayerFallDamage;
 Handle SDKCall_CTFGameRules_RadiusDamage;
 Handle SDKCall_CTFRadiusDamageInfo_CalculateFalloff;
 
+Address CObjectDispenser_m_hHealingTargets;
 Address CTFWeaponBase_m_flLastDeployTime;
 Address CTFWeaponBase_m_pWeaponInfo;
 Address CTFWeaponBase_m_iWeaponMode;
@@ -160,7 +166,10 @@ float clamp(float val, float minVal, float maxVal)
 //////////////////////////////////////////////////////////////////////////////
 
 #include "methodmaps/mathlib/Vector.sp"
+#include "methodmaps/tier1/CUtlMemory.sp"
+#include "methodmaps/tier1/CUtlVector.sp"
 #include "methodmaps/server/CBaseEntity.sp"
+#include "methodmaps/server/CObjectDispenser.sp"
 #include "methodmaps/shared/CEconEntity.sp"
 #include "methodmaps/shared/WeaponData_t.sp"
 #include "methodmaps/shared/CTFWeaponInfo.sp"
@@ -171,8 +180,18 @@ float clamp(float val, float minVal, float maxVal)
 #include "methodmaps/shared/CTakeDamageInfo.sp"
 #include "methodmaps/shared/CTFRadiusDamageInfo.sp"
 #include "methodmaps/shared/CTFGameRules.sp"
+#include "methodmaps/shared/healers_t.sp"
 
 static CTFGameRules g_pGameRules;
+
+//////////////////////////////////////////////////////////////////////////////
+// TF2 GLOBALS                                                              //
+//////////////////////////////////////////////////////////////////////////////
+
+void ExtinguishPlayer(CEconEntity pExtinguisher, CTFPlayer pOwner, CTFPlayer pTarget, const int pExtinguisherName /* const char* */)
+{
+    SDKCall(SDKCall_ExtinguishPlayer, pExtinguisher.Index, pOwner.Index, pTarget.Index, pExtinguisherName);
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // UTILITY                                                                  //
@@ -233,11 +252,13 @@ public void OnPluginStart()
     }
 
     // DHooks.
+    DHooks_CBaseEntity_Deflected = DHookCreateFromConf(config, "CBaseEntity::Deflected");
     DHooks_CObjectDispenser_DispenseAmmo = DHookCreateFromConf(config, "CObjectDispenser::DispenseAmmo");
     DHooks_CTFProjectile_Jar_Explode = DHookCreateFromConf(config, "CTFProjectile_Jar::Explode");
 
     DHooks_CTFWeaponBase_Deploy = DHookCreateFromConf(config, "CTFWeaponBase::Deploy");
     DHooks_CTFWeaponBaseGun_GetWeaponSpread = DHookCreateFromConf(config, "CTFWeaponBaseGun::GetWeaponSpread");
+    DHooks_CTFFlareGun_Revenge_ExtinguishPlayerInternal = DHookCreateFromConf(config, "CTFFlareGun_Revenge::ExtinguishPlayerInternal");
     DHooks_CBaseObject_OnTakeDamage = DHookCreateFromConf(config, "CBaseObject::OnTakeDamage");
     DHooks_CTFPlayer_OnTakeDamage = DHookCreateFromConf(config, "CTFPlayer::OnTakeDamage");
     DHooks_CTFPlayer_OnTakeDamage_Alive = DHookCreateFromConf(config, "CTFPlayer::OnTakeDamage_Alive");
@@ -248,9 +269,11 @@ public void OnPluginStart()
 
     DHookEnableDetour(DHooks_CTFWeaponBase_Deploy, false, Deploy);
     DHookEnableDetour(DHooks_CTFWeaponBaseGun_GetWeaponSpread, true, GetWeaponSpread); // for some reason this has to be post in order to work properly.
+    DHookEnableDetour(DHooks_CTFFlareGun_Revenge_ExtinguishPlayerInternal, false, ExtinguishPlayerInternal);
     DHookEnableDetour(DHooks_CBaseObject_OnTakeDamage, false, CBaseObject_OnTakeDamage);
     DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage, false, CTFPlayer_OnTakeDamage);
     DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage, true, OnTakeDamagePost);
+    DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage_Alive, false, OnTakeDamageAlive);
     DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage_Alive, true, OnTakeDamageAlivePost);
     DHookEnableDetour(DHooks_CTFPlayer_TeamFortress_CalculateMaxSpeed, true, TeamFortress_CalculateMaxSpeed);
     DHookEnableDetour(DHooks_CTFPlayerShared_AddCond, false, AddCond);
@@ -258,6 +281,10 @@ public void OnPluginStart()
     DHookEnableDetour(DHooks_CTFGameRules_FlPlayerFallDamage, true, FlPlayerFallDamage);
 
     // SDKCall.
+    StartPrepSDKCall(SDKCall_Entity);
+    PrepSDKCall_SetFromConf(config, SDKConf_Virtual, "CBaseCombatWeapon::GetName");
+    PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+    SDKCall_CBaseCombatWeapon_GetName = EndPrepSDKCall();
     StartPrepSDKCall(SDKCall_Entity);
     PrepSDKCall_SetFromConf(config, SDKConf_Virtual, "CTFWeaponBase::GetMaxClip1");
     PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
@@ -267,6 +294,18 @@ public void OnPluginStart()
     PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CBaseCombatWeapon::Deploy");
     PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_Plain);
     SDKCall_CBaseCombatWeapon_Deploy = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Static);
+    PrepSDKCall_SetFromConf(config, SDKConf_Signature, "ExtinguishPlayer");
+    PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+    PrepSDKCall_AddParameter(SDKType_CBasePlayer, SDKPass_Pointer);
+    PrepSDKCall_AddParameter(SDKType_CBasePlayer, SDKPass_Pointer);
+    PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain); // const char*
+    SDKCall_ExtinguishPlayer = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Entity);
+    PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CBaseEntity::TakeDamage");
+    PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+    PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+    SDKCall_CBaseEntity_TakeDamage = EndPrepSDKCall();
     StartPrepSDKCall(SDKCall_Player);
     PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CTFPlayer::TeamFortress_CalculateMaxSpeed");
     PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
@@ -298,6 +337,7 @@ public void OnPluginStart()
     SDKCall_CTFRadiusDamageInfo_CalculateFalloff = EndPrepSDKCall();
     
     // Offsets.
+    CObjectDispenser_m_hHealingTargets = view_as<Address>(GameConfGetOffset(config, "CObjectDispenser::m_hHealingTargets"));
     CTFWeaponBase_m_flLastDeployTime = view_as<Address>(GameConfGetOffset(config, "CTFWeaponBase::m_flLastDeployTime"));
     CTFWeaponBase_m_pWeaponInfo = view_as<Address>(GameConfGetOffset(config, "CTFWeaponBase::m_pWeaponInfo"));
     CTFWeaponBase_m_iWeaponMode = view_as<Address>(GameConfGetOffset(config, "CTFWeaponBase::m_iWeaponMode"));
@@ -399,6 +439,16 @@ public Action ClientHurt(Event event, const char[] name, bool dontBroadcast)
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// NEXT FRAME CALLS                                                          //
+//////////////////////////////////////////////////////////////////////////////
+
+void OnEntityCreatedRequestFrame(CBaseEntity entity)
+{
+    if (entity.ClassEquals("tf_projectile_jar_gas")) // Reset the Gas Passer charge meter.
+        entity.GetMemberEntity(Prop_Send, "m_hLauncher").RechargeTime = 0.00;
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // FORWARDS                                                                 //
 //////////////////////////////////////////////////////////////////////////////
 
@@ -415,12 +465,6 @@ public void OnEntityCreated(int entity, const char[] classname)
     if (newEntity.ClassEquals("tf_dropped_weapon") && newEntity.Owner != INVALID_ENTITY) // If the player drops a weapon death, re-structurise their weapon list just to be safe.
         ToTFPlayer(newEntity.Owner).StructuriseWeaponList();
     RequestFrame(OnEntityCreatedRequestFrame, newEntity);
-}
-
-void OnEntityCreatedRequestFrame(CBaseEntity entity)
-{
-    if (entity.ClassEquals("tf_projectile_jar_gas")) // Reset the Gas Passer charge meter.
-        entity.GetMemberEntity(Prop_Send, "m_hLauncher").RechargeTime = 0.00;
 }
 
 public void OnGameFrame()
@@ -477,6 +521,15 @@ public void OnGameFrame()
                 
                 player.SetMemberFloat(Prop_Send, "m_flItemChargeMeter", doesHaveWeapon.RechargeTime, 1);
             }
+
+            // Cap at 3 crits with the Manmelter.
+            doesHaveWeapon = player.GetWeapon(595);
+            if (doesHaveWeapon != INVALID_ENTITY && player.GetMember(Prop_Send, "m_iRevengeCrits") > 3)
+                player.SetMember(Prop_Send, "m_iRevengeCrits", 3);
+
+            // Remove the rocket jump condition from the player if they are now grounded.
+            if (player.Class != TFClass_DemoMan && player.Class != TFClass_Soldier && player.GetFlags() & (FL_ONGROUND | FL_INWATER) && player.m_Shared.InCond(TFCond_BlastJumping))
+                player.m_Shared.RemoveCond(TFCond_BlastJumping);
         }
     }
 
@@ -562,6 +615,14 @@ Action ClientTookFallDamage(int victimIndex, int &attackerIndex, int &inflictor,
 // DHOOKS                                                                   //
 //////////////////////////////////////////////////////////////////////////////
 
+MRESReturn Deflected(int entity, DHookReturn returnValue, DHookParam parameters)
+{
+    CBaseEntity projectile = view_as<CBaseEntity>(entity);
+    projectile.SpawnPosition.Dispose();
+    projectile.SpawnPosition = projectile.GetAbsOrigin(.global = false);
+    return MRES_Ignored;
+}
+
 MRESReturn DispenseAmmo(int entity, DHookReturn returnValue, DHookParam parameters)
 {
     CTFPlayer player = parameters.Get(1);
@@ -577,70 +638,85 @@ MRESReturn Deploy(int index, DHookReturn returnValue)
 {
     CTFWeaponBase entity = view_as<CTFWeaponBase>(index);
     CTFPlayer player = ToTFPlayer(entity.Owner);
+    if (!player.Exists)
+        return MRES_Ignored;
     CTFWeaponBase lastWeapon = ToTFWeaponBase(player.GetMemberEntity(Prop_Send, "m_hLastWeapon"));
 
-    // Always force weapons to have the previous weapon's holster speed attribute applied.
-    if (lastWeapon != INVALID_ENTITY) 
+    // Weapon switch checks.
+    if (lastWeapon != INVALID_ENTITY)
     {
-        lastWeapon.m_flLastDeployTime = 0.00;
-        if (lastWeapon.ItemDefinitionIndex == 730)
+        if (lastWeapon.ItemDefinitionIndex == 730) 
             player.TimeSinceSwitchFromNoAmmoWeapon = GetGameTime();
+
+        // Checks for weapons with a slower holster speed.
+        float multiplier = 1.0;
+        float oldMultiplier = 1.0;
+        lastWeapon.HookValueFloat(multiplier, "mult_switch_from_wep_deploy_time");
+        if (player.LastWeaponWithSlowHolster.Exists)
+            lastWeapon.HookValueFloat(oldMultiplier, "mult_switch_from_wep_deploy_time");
+        if (multiplier > 1.0 && multiplier >= oldMultiplier)
+            player.LastWeaponWithSlowHolster = lastWeapon;
     }
 
-    // The Reserve Shooter should not be affected by the global weapon switch speed attribute. I just re-wrote this function. This code excludes the global weapon switch modifier and any other unused piece of code.
-    if (entity.ItemDefinitionIndex == 415)
+    // Re-wrote the deploy function for a couple of things.
+    entity.SetMember(Prop_Send, "m_iReloadMode", TF_RELOAD_START);
+    float flOriginalPrimaryAttack = entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack");
+    float flOriginalSecondaryAttack = entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack");
+    bool bDeploy = SDKCall(SDKCall_CBaseCombatWeapon_Deploy, index);
+    if (bDeploy)
     {
-        entity.SetMember(Prop_Send, "m_iReloadMode", TF_RELOAD_START);
-        float flOriginalPrimaryAttack = entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack");
-        float flOriginalSecondaryAttack = entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack");
-        bool bDeploy = SDKCall(SDKCall_CBaseCombatWeapon_Deploy, index);
-        if (bDeploy)
+        if (player == INVALID_ENTITY)
         {
-            if (player == INVALID_ENTITY)
-            {
-                returnValue.Value = false;
-                return MRES_Supercede;
-            }
-
-            float flWeaponSwitchTime = 0.50;
-
-            // Overrides the anim length for calculating ready time.
-            float flDeployTimeMultiplier = 1.00;
-            entity.HookValueFloat(flDeployTimeMultiplier, "mult_single_wep_deploy_time");
-            
-            if (lastWeapon != INVALID_ENTITY || player.GetMemberEntity(Prop_Send, "m_hGrapplingHookTarget") != INVALID_ENTITY) // I intentionally left out the checks for whether the player has had his previous weapon equippde for >=0.5s. I don't think that is necessary.
-                lastWeapon.HookValueFloat(flDeployTimeMultiplier, "mult_switch_from_wep_deploy_time");
-
-            // swords deploy and holster 75% slower
-            int iIsSword = 0;
-            if (lastWeapon != INVALID_ENTITY)
-                lastWeapon.HookValueInt(iIsSword, "is_a_sword");
-            entity.HookValueInt(iIsSword, "is_a_sword");
-            if (iIsSword)
-			    flDeployTimeMultiplier *= 1.75;
-
-            if (player.m_Shared.InCond(TFCond_RuneAgility))
-                flDeployTimeMultiplier /= 5.00;
-            
-            flDeployTimeMultiplier = max(flDeployTimeMultiplier, 0.00001);
-            float flDeployTime = flWeaponSwitchTime * flDeployTimeMultiplier;
-            float flPlaybackRate = clamp( ( 1.00 / flDeployTimeMultiplier ) * ( 0.67 / flWeaponSwitchTime ), -4.00, 12.00 ); // clamp between the range that's defined in send table
-            if (player.GetMemberEntity(Prop_Send, "m_hViewModel") != INVALID_ENTITY)
-                player.GetMemberEntity(Prop_Send, "m_hViewModel").SetMemberFloat(Prop_Send, "m_flPlaybackRate", flPlaybackRate);
-
-            // Don't override primary attacks that are already further out than this. This prevents
-            // people exploiting weapon switches to allow weapons to fire faster.
-            entity.SetMemberFloat(Prop_Send, "m_flNextPrimaryAttack", max(flOriginalPrimaryAttack, GetGameTime() + flDeployTime));
-            entity.SetMemberFloat(Prop_Send, "m_flNextSecondaryAttack", max(flOriginalSecondaryAttack, entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack")));
-
-            player.SetMemberFloat(Prop_Send, "m_flNextAttack", entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack"));
-
-            entity.m_flLastDeployTime = GetGameTime();
-
-            // Reset our deploy-lifetime kill counter.
-            player.SetMember(Prop_Send, "m_iKillCountSinceLastDeploy", 0);
-            player.SetMemberFloat(Prop_Send, "m_flFirstPrimaryAttack", entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack"));
+            returnValue.Value = false;
+            return MRES_Supercede;
         }
+
+        float flWeaponSwitchTime = 0.50;
+
+        // Overrides the anim length for calculating ready time.
+        float flDeployTimeMultiplier = 1.00;
+        entity.HookValueFloat(flDeployTimeMultiplier, "mult_single_wep_deploy_time");
+
+        // Global weapon speed changes. The Reserve shooter is not affected by this.
+        if (entity.ItemDefinitionIndex != 415)
+            player.HookValueFloat(flDeployTimeMultiplier, "mult_deploy_time");
+        
+        if (lastWeapon != INVALID_ENTITY || player.GetMemberEntity(Prop_Send, "m_hGrapplingHookTarget") != INVALID_ENTITY) // I intentionally left out the checks for whether the player has had his previous weapon equippde for >=0.5s. I don't think that is necessary.
+            lastWeapon.HookValueFloat(flDeployTimeMultiplier, "mult_switch_from_wep_deploy_time");
+        if (lastWeapon != player.LastWeaponWithSlowHolster && player.LastWeaponWithSlowHolster.Exists && GetGameTime() - player.LastWeaponWithSlowHolster.LastHolsterTime < 0.5) // Still apply the slower holster attribute if the player has not switched from their slow holstering weapon for more than 0.5s.
+            player.LastWeaponWithSlowHolster.HookValueFloat(flDeployTimeMultiplier, "mult_switch_from_wep_deploy_time");
+
+        // swords deploy and holster 75% slower
+        int iIsSword = 0;
+        if (lastWeapon != INVALID_ENTITY)
+            lastWeapon.HookValueInt(iIsSword, "is_a_sword");
+        entity.HookValueInt(iIsSword, "is_a_sword");
+        if (iIsSword)
+            flDeployTimeMultiplier *= 1.75;
+
+        if (player.m_Shared.InCond(TFCond_RuneAgility))
+            flDeployTimeMultiplier /= 5.00;
+        
+        flDeployTimeMultiplier = max(flDeployTimeMultiplier, 0.00001);
+        float flDeployTime = flWeaponSwitchTime * flDeployTimeMultiplier;
+        float flPlaybackRate = clamp( ( 1.00 / flDeployTimeMultiplier ) * ( 0.67 / flWeaponSwitchTime ), -4.00, 12.00 ); // clamp between the range that's defined in send table
+        if (player.GetMemberEntity(Prop_Send, "m_hViewModel") != INVALID_ENTITY)
+            player.GetMemberEntity(Prop_Send, "m_hViewModel").SetMemberFloat(Prop_Send, "m_flPlaybackRate", flPlaybackRate);
+
+        // Don't override primary attacks that are already further out than this. This prevents
+        // people exploiting weapon switches to allow weapons to fire faster.
+        entity.SetMemberFloat(Prop_Send, "m_flNextPrimaryAttack", max(flOriginalPrimaryAttack, GetGameTime() + flDeployTime));
+        entity.SetMemberFloat(Prop_Send, "m_flNextSecondaryAttack", max(flOriginalSecondaryAttack, entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack")));
+
+        player.SetMemberFloat(Prop_Send, "m_flNextAttack", entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack"));
+
+        entity.m_flLastDeployTime = GetGameTime();
+        if (lastWeapon != INVALID_ENTITY)
+            lastWeapon.LastHolsterTime = GetGameTime();
+
+        // Reset our deploy-lifetime kill counter.
+        player.SetMember(Prop_Send, "m_iKillCountSinceLastDeploy", 0);
+        player.SetMemberFloat(Prop_Send, "m_flFirstPrimaryAttack", entity.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack"));
 
         returnValue.Value = bDeploy;
         return MRES_Supercede;
@@ -652,6 +728,7 @@ MRESReturn GetWeaponSpread(int index, DHookReturn returnValue)
 {
     CTFWeaponBase entity = view_as<CTFWeaponBase>(index);
 
+    // from server.so - CTFWeaponBaseGun::GetWeaponSpread:
     // v2 = *(float *)(*((_DWORD *)this + 429) + (*((_DWORD *)this + 426) << 6) + 1796);
     float spread = entity.m_pWeaponInfo.GetWeaponData(entity.m_iWeaponMode).m_flSpread;
     entity.HookValueFloat(spread, "mult_spread_scale");
@@ -688,6 +765,30 @@ MRESReturn GetWeaponSpread(int index, DHookReturn returnValue)
     }
     
     returnValue.Value = spread;
+    return MRES_Supercede;
+}
+
+MRESReturn ExtinguishPlayerInternal(int index, DHookReturn returnValue, DHookParam parameters)
+{
+    // Used for the Manmelter.
+    CTFWeaponBase weapon = view_as<CTFWeaponBase>(index);
+    CTFPlayer target = view_as<CTFPlayer>(parameters.Get(1));
+    CTFPlayer owner = view_as<CTFPlayer>(parameters.Get(2));
+    returnValue.Value = false;
+    if (target.m_Shared.InCond(TFCond_OnFire))
+    {
+        ExtinguishPlayer(weapon, owner, target, weapon.GetName());
+        if (target.OriginalBurner.GetTeam() != target.GetTeam() && target.GetTeam() != owner.GetTeam())
+            owner.SetMember(Prop_Send, "m_iRevengeCrits", owner.GetMember(Prop_Send, "m_iRevengeCrits") + 1);
+
+        float currentNextAttack = weapon.GetMemberFloat(Prop_Send, "m_flNextPrimaryAttack");
+        weapon.SetMemberFloat(Prop_Send, "m_flNextPrimaryAttack", currentNextAttack < GetGameTime() + 1.0 ? GetGameTime() + 1.0 : currentNextAttack );
+
+        if (owner.GetMember(Prop_Send, "m_iRevengeCrits") == 1 && !owner.m_Shared.InCond(TFCond_Kritzkrieged))
+            owner.m_Shared.AddCond(TFCond_Kritzkrieged);
+
+        returnValue.Value = true;
+    }
     return MRES_Supercede;
 }
 
@@ -730,7 +831,7 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
     if (attacker.GetMember(Prop_Send, "m_iNextMeleeCrit") == 1 && attacker.GetActiveWeapon() == attacker.GetWeaponFromSlot(TFWeaponSlot_Melee))
         info.SetCritType(victim, CRIT_MINI);
 
-    // Buff the Caber self-explosive damage by 10%. Also rewrote the explosive damage ramp-up since it's currently finnicky.
+    // Increase the Caber self-explosive damage by 10%. Also rewrote the explosive damage ramp-up since it's currently finnicky.
     if (info.m_hWeapon.ItemDefinitionIndex == 307 && info.m_iDamageCustom == TF_CUSTOM_STICKBOMB_EXPLOSION)
     {
         if (victim == attacker)
@@ -752,7 +853,11 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
 
     // Ignition checks.
     if (info.m_bitsDamageType & DMG_IGNITE)
+    {
         victim.OnFire = victim.m_Shared.InCond(TFCond_OnFire);
+        if (!victim.OnFire)
+            victim.OriginalBurner = attacker;
+    }
 
     // Force the damage number with a stun ball from the sandman to be 15, 30 with a moonshot. On moonshots fully stun the victim as well.
     // Also I'm gonna deal with stunning differently, because the current stun mechanic is quite bad.
@@ -801,6 +906,59 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
         victim.LastProjectileEncountered.Remove();
     }
 
+    // Re-write the rampup/falloff with the Air Strike to be between the projectile's original position and the victim.
+    if (info.m_hWeapon.ItemDefinitionIndex == 1104 && victim != attacker)
+    {
+        float damage = 90.00;
+        info.m_hWeapon.HookValueFloat(damage, "damage penalty"); // can't pass methodmap properties by reference apparently.
+        damage *= RemapValClamped((info.m_hInflictor.SpawnPosition - victim.GetAbsOrigin()).Length(), 50.00, 1024.00, 1.25, 0.528); // 150% rampup, 52.8% falloff
+
+        info.m_bitsDamageType &= ~DMG_USEDISTANCEMOD;
+        info.m_flDamage = damage;
+    }
+
+    // Handle with blast jumping for all classes, except for Soldier and Demoman (these are already dealt with).
+    if ((info.m_bitsDamageType & DMG_BLAST || info.m_iDamageCustom == TF_CUSTOM_FLARE_EXPLOSION) && attacker == victim && victim.Class != TFClass_DemoMan && victim.Class != TFClass_Soldier && !(victim.GetFlags() & (FL_ONGROUND | FL_INWATER)))
+    {
+        Event event = CreateEvent("rocket_jump");
+        event.SetInt("userid", victim.GetUserID());
+        event.SetBool("playsound", false);
+        event.Fire();
+        victim.m_Shared.AddCond(TFCond_BlastJumping);
+    }
+
+    // Attribute hooks.
+    if (info.m_hWeapon != INVALID_ENTITY)
+    {
+        // Fix the crit_while_airborne attribute so it works to any weapon with it.
+        int value;
+        info.m_hWeapon.HookValueInt(value, "crit_while_airborne");
+        if (value && attacker.m_Shared.InCond(TFCond_BlastJumping))
+            info.SetCritType(victim, CRIT_FULL);
+
+        // Damage players connected onto the same dispenser beam with weapons using the damage_all_connected attribute.
+        value = 0;
+        info.m_hWeapon.HookValueInt(value, "damage_all_connected");
+        if (value && !attacker.RecursiveCheck)
+        {
+            attacker.RecursiveCheck = true;
+            for (int i = 0; i < victim.m_Shared.GetNumHealers(); ++i)
+            {
+                Healers_t healer = victim.m_Shared.m_aHealers.Get(i, healers_tSize);
+                CObjectDispenser dispenser = view_as<CObjectDispenser>(healer.m_pHealer);
+                if (healer.m_bDispenserHeal)
+                {
+                    for (int v = 0; v < dispenser.m_hHealingTargets.Count(); ++v)
+                    {
+                        CTFPlayer player = view_as<CTFPlayer>(GetCBaseEntityHandleFromAddress(dispenser.m_hHealingTargets.Get(v)));
+                        player.TakeDamage(info);
+                    }
+                }
+            }
+            attacker.RecursiveCheck = false;
+        }
+    }
+    
     return MRES_Ignored;
 }
 
@@ -834,6 +992,19 @@ MRESReturn OnTakeDamagePost(int entity, DHookReturn returnValue, DHookParam para
     return MRES_Ignored;
 }
 
+MRESReturn OnTakeDamageAlive(int entity, DHookReturn returnValue, DHookParam parameters)
+{
+    CTakeDamageInfo info = CTakeDamageInfo.FromAddress(parameters.Get(1));
+    CTFPlayer victim = view_as<CTFPlayer>(entity);
+    CTFPlayer attacker = view_as<CTFPlayer>(info.m_hAttacker);
+
+    // 30% less self damage from the flare guns if the Third Degree is equipped.
+    if (attacker == victim && info.m_iDamageCustom == TF_CUSTOM_FLARE_EXPLOSION && victim.GetWeapon(593) != INVALID_ENTITY)
+        info.m_flDamage *= 0.70;
+
+    return MRES_Ignored;
+}
+
 MRESReturn OnTakeDamageAlivePost(int entity, DHookReturn returnValue, DHookParam parameters)
 {
     CTakeDamageInfo info = CTakeDamageInfo.FromAddress(parameters.Get(1));
@@ -845,10 +1016,12 @@ MRESReturn OnTakeDamageAlivePost(int entity, DHookReturn returnValue, DHookParam
     if (victim.GetWeapon(772) != INVALID_ENTITY)
         victim.SetMemberFloat(Prop_Send, "m_flHypeMeter", max(0.00, victim.GetMemberFloat(Prop_Send, "m_flHypeMeter") - info.m_flDamage * 1.5));
     
-    // Deal up to 500 damage to get max charge with the Gas Passer, if the damage is not dealt by the Gas Passer explosion.
+    // Deal up to 750 damage to get max charge with the Gas Passer, if the damage is not dealt by the Gas Passer explosion.
     doesHaveWeapon = attacker.GetWeapon(1180);
     if (doesHaveWeapon != INVALID_ENTITY && victim != attacker && (info.m_hWeapon.ItemDefinitionIndex != 1180 || info.m_bitsDamageType & DMG_BLAST == 0))
-        doesHaveWeapon.RechargeTime += info.m_flDamage / 5;
+        doesHaveWeapon.RechargeTime += info.m_flDamage / 7.5;
+    
+    return MRES_Ignored;
 }
 
 MRESReturn TeamFortress_CalculateMaxSpeed(int entity, DHookReturn returnValue, DHookParam parameters)

@@ -24,6 +24,7 @@ enum struct cbaseentityData
     char class[MAX_NAME_LENGTH];
     float timestamp;
     float rechargeTime;
+    float lastHolsterTime;
     
     // Panic Attack.
     float spreadMultiplier;
@@ -120,6 +121,11 @@ methodmap CBaseEntity
         public get() { return cbaseentities[this].rechargeTime; }
         public set(float value) { cbaseentities[this].rechargeTime = value; }
     }
+    property float LastHolsterTime
+    {
+        public get() { return cbaseentities[this].lastHolsterTime; }
+        public set(float value) { cbaseentities[this].lastHolsterTime = value; }
+    }
     property float SpreadMultiplier
     {
         public get() { return cbaseentities[this].spreadMultiplier; }
@@ -181,6 +187,18 @@ methodmap CBaseEntity
             return 1.0;
         return clamp(float(this.GetMember(Prop_Data, "m_iHealth")) / float(this.GetMember(Prop_Data, "m_iMaxHealth")), 0.00, 1.00);
     }
+    public TFTeam GetTeam()
+    {
+        return view_as<TFTeam>(this.GetMember(Prop_Send, "m_iTeamNum"));
+    }
+    public int GetFlags()
+    {
+        return GetEntityFlags(this.Index);
+    }
+    public int TakeDamage(MemoryBlock info)
+    {
+        return SDKCall(SDKCall_CBaseEntity_TakeDamage, this.Index, info);
+    }
 
     // CBaseEntity members.
     property bool IsPlayer
@@ -217,6 +235,8 @@ methodmap CBaseEntity
             DHookEntity(DHooks_CObjectDispenser_DispenseAmmo, false, index, _, DispenseAmmo);
         else if (StrEqual(cbaseentities[index].class, "tf_projectile_jar_gas"))
             DHookEntity(DHooks_CTFProjectile_Jar_Explode, true, index, _, Explode);
+        else if (StrContains(cbaseentities[index].class, "tf_projectile_") != -1)
+            DHookEntity(DHooks_CBaseEntity_Deflected, false, index, _, Deflected);
 
         return entity;
     }
@@ -229,4 +249,8 @@ methodmap CBaseEntity
 stock CBaseEntity GetCBaseEntityFromAddress(Address address)
 {
     return view_as<CBaseEntity>(GetEntityFromAddress(Dereference(address)));
+}
+stock CBaseEntity GetCBaseEntityHandleFromAddress(Address address)
+{
+    return view_as<CBaseEntity>(LoadEntityHandleFromAddress(address));
 }
