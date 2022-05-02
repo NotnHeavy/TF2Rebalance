@@ -195,7 +195,7 @@ methodmap CBaseEntity
     {
         return GetEntityFlags(this.Index);
     }
-    public int TakeDamage(MemoryBlock info)
+    public int TakeDamage(Address info)
     {
         return SDKCall(SDKCall_CBaseEntity_TakeDamage, this.Index, info);
     }
@@ -212,6 +212,16 @@ methodmap CBaseEntity
     property bool IsBaseCombatWeapon
     {
         public get() { return this.ClassContains("tf_weapon") != -1;}
+    }
+
+    // Statics.
+    public static CBaseEntity Dereference(Address address)
+    {
+        return view_as<CBaseEntity>(GetEntityFromAddress(Dereference(address)));
+    }
+    public static CBaseEntity GetFromHandle(Address address)
+    {
+        return view_as<CBaseEntity>(LoadEntityHandleFromAddress(address));
     }
 
     // Constructor.
@@ -240,17 +250,4 @@ methodmap CBaseEntity
 
         return entity;
     }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS                                                           //
-//////////////////////////////////////////////////////////////////////////////
-
-stock CBaseEntity GetCBaseEntityFromAddress(Address address)
-{
-    return view_as<CBaseEntity>(GetEntityFromAddress(Dereference(address)));
-}
-stock CBaseEntity GetCBaseEntityHandleFromAddress(Address address)
-{
-    return view_as<CBaseEntity>(LoadEntityHandleFromAddress(address));
 }

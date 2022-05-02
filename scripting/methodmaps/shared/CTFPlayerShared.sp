@@ -35,7 +35,7 @@ methodmap CTFPlayerShared
     // CTFPlayerShared members.
     property CBaseEntity m_pOuter // TODO when methodmap declarations come out: return as CTFPlayer instead.
     {
-        public get() { return GetCBaseEntityFromAddress(this.Address + view_as<Address>(pOuter)); }
+        public get() { return CBaseEntity.Dereference(this.Address + view_as<Address>(pOuter)); }
     }
     property CUtlVector m_aHealers
     {

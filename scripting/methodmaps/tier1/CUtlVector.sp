@@ -57,8 +57,8 @@ methodmap CUtlVector
     {
         return this.m_Memory.Get(index, size);
     }
-    public void Set(int index, any value, NumberType size = NumberType_Int32)
+    public void Set(int index, any value, int size = 4, int offset = 0)
     {
-        this.m_Memory.Set(index, value, size);
+        this.m_Memory.Set(index, value, size, offset);
     }
 }

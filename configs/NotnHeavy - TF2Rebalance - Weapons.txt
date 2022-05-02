@@ -58,6 +58,7 @@ They cannot strafe out of this."
     "414"
     {
         "name"   "Liberty Launcher"
+        "macro"  "HOLSTER_CHANGE"
         "change" "+ Deploying is now 20% faster and holstering is now 10% faster."
         "change" "+ Removed the 25% damage penalty."
         "change" "- 25% radius penalty."
@@ -68,7 +69,7 @@ They cannot strafe out of this."
     {
         "name"   "Beggar's Bazooka"
         "change" "+ Removed the radius penalty."
-        "change" "- Added a 20% damage penalty."
+        "change" "- Added a 15% damage penalty."
         "change" "- You cannot get any ammo from dispensers while equipped or 10 seconds after switching."
     }
     "1104"
@@ -98,6 +99,7 @@ change was made to weaken bombardments."
     "416"
     {
         "name"   "Market Gardener"
+        "macro"  "HOLSTER_CHANGE"
         "change" "- 35% slower holster speed."
     }
 
@@ -129,29 +131,35 @@ weapons that can ignite players until the player is no longer burning."
     "1180"
     {
         "name"   "Gas Passer"
-        "change" "+ This weapon now explodes on hit. The explosion deals 100 damage at a radius of
-200HU, with 50% falloff (not dependent upon distance between the projectile and 
+        "change" "+ This weapon now explodes on hit. The explosion deals 75 damage at a radius of
+146HU, with 50% falloff (not dependent upon distance between the projectile and 
 player)."
         "change" "+ Shortened the recharge duration to 40s, or by 750 damage, however charge is not
 increased by the Gas Passer explosion."
+        "change" "+ Direct hits deal mini-crit damage."
+        "change" "- 33% more self damage from the blast."
     }
 
     // Pyro melees.
     "38"
     {
-        "name"   "Axtinguisher"
-        "change" "- The holster attribute is now independent of how long this weapon was equipped.
-It now also applies if the user switches from this weapon less than 0.5s after 
-holstering it."
+        "name"  "Axtinguisher"
+        "macro" "HOLSTER_CHANGE"
     }
     "593"
     {
         "name"   "Third Degree"
+        "macro"  "HOLSTER_CHANGE"
         "change" "+ Deals crits while the wielder is blast jumping."
-        "change" "+ 30% less self damage from the flare guns."
-        "change" "+ Players connected to the same dispenser or payload will also be damaged."
+        "change" "+ 30% less self damage from the flare guns and blast damage."
+        "change" "+ Players connected to the same dispenser or payload beam will also be damaged."
         "change" "- 25% damage penalty."
         "change" "- 35% slower holster speed."
+    }
+    "tf_weapon_breakable_sign"
+    {
+        "name"   "Neon Annihilator"
+        "change" "+ Deals crits to victims covered in or ignited by gas."
     }
 
     // Demoman melees.

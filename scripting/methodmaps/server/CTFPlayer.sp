@@ -33,6 +33,7 @@ enum struct ctfplayerData
 
     // Projectiles.
     CBaseEntity lastProjectileEncountered;
+    float timeSinceLastProjectileEncounter;
 
     // Sandman.
     float timeUntilSandmanStunEnd;
@@ -45,8 +46,12 @@ enum struct ctfplayerData
     CBaseEntity originalBurner;
     int revengeCrits;
 
+    // Gas Passer.
+    bool fromGasPasser;
+
     // Third Degreee.
-    bool recursiveCheck;
+    MemoryBlock connectedInfo;
+    int recursiveCheck;
 
     // Ullapool Caber.
     bool takingMiniCritDamage;
@@ -125,6 +130,11 @@ methodmap CTFPlayer < CBaseEntity
         public get() { return ctfplayers[this].lastProjectileEncountered; }
         public set(CBaseEntity value) { ctfplayers[this].lastProjectileEncountered = value; }
     }
+    property float TimeSinceLastProjectileEncounter
+    {
+        public get() { return ctfplayers[this].timeSinceLastProjectileEncounter; }
+        public set(float value) { ctfplayers[this].timeSinceLastProjectileEncounter = value; }
+    }
     property float TimeUntilSandmanStunEnd
     {
         public get() { return ctfplayers[this].timeUntilSandmanStunEnd; }
@@ -150,10 +160,20 @@ methodmap CTFPlayer < CBaseEntity
         public get() { return ctfplayers[this].revengeCrits; }
         public set(int value) { ctfplayers[this].revengeCrits = value; }
     }
-    property bool RecursiveCheck
+    property bool FromGasPasser
+    {
+        public get() { return ctfplayers[this].fromGasPasser; }
+        public set(bool toggle) { ctfplayers[this].fromGasPasser = toggle; }
+    }
+    property MemoryBlock ConnectedInfo
+    {
+        public get() { return ctfplayers[this].connectedInfo; }
+        public set(MemoryBlock value) { ctfplayers[this].connectedInfo = value; }
+    }
+    property int RecursiveCheck
     {
         public get() { return ctfplayers[this].recursiveCheck; }
-        public set(bool toggle) { ctfplayers[this].recursiveCheck = toggle; }
+        public set(int toggle) { ctfplayers[this].recursiveCheck = toggle; }
     }
     property bool TakingMiniCritDamage
     {
@@ -356,6 +376,17 @@ methodmap CTFPlayer < CBaseEntity
                             {
                                 forClass = false;
                                 break;
+                            }
+                        }
+                        else if (StrEqual(key, "macro"))
+                        {
+                            for (int i = 0; i < sizeof(configMacros); ++i)
+                            {
+                                if (StrEqual(value, configMacros[i][0]))
+                                {
+                                    menu.DrawText(configMacros[i][1]);
+                                    break;
+                                }
                             }
                         }
                         else

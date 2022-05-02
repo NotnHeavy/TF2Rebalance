@@ -65,18 +65,18 @@ methodmap CTakeDamageInfo < MemoryBlock
     // CTakeDamageInfo members.
     property Vector m_vecDamageForce
     {
-        public get() { return GetVectorFromAddress(this.Address + view_as<Address>(vecDamageForce)); }
-        public set(Vector vector) { WriteToVector(this.Address + view_as<Address>(vecDamageForce), vector); }
+        public get() { return Vector.Dereference(this.Address + view_as<Address>(vecDamageForce)); }
+        public set(Vector vector) { vector.WriteToMemory(this.Address + view_as<Address>(vecDamageForce)); }
     }
     property Vector m_vecDamagePosition
     {
-        public get() { return GetVectorFromAddress(this.Address + view_as<Address>(vecDamagePosition)); }
-        public set(Vector vector) { WriteToVector(this.Address + view_as<Address>(vecDamagePosition), vector); }
+        public get() { return Vector.Dereference(this.Address + view_as<Address>(vecDamagePosition)); }
+        public set(Vector vector) { vector.WriteToMemory(this.Address + view_as<Address>(vecDamagePosition)); }
     }
     property Vector m_vecReportedPosition
     {
-        public get() { return GetVectorFromAddress(this.Address + view_as<Address>(vecDamageForce)); }
-        public set(Vector vector) { WriteToVector(this.Address + view_as<Address>(vecDamageForce), vector); }
+        public get() { return Vector.Dereference(this.Address + view_as<Address>(vecDamageForce)); }
+        public set(Vector vector) { vector.WriteToMemory(this.Address + view_as<Address>(vecDamageForce)); }
     }
     property CBaseEntity m_hInflictor
     {
@@ -218,6 +218,15 @@ methodmap CTakeDamageInfo < MemoryBlock
         wrapper.m_flDamageForForce = 0.00;
         wrapper.m_eCritType = CRIT_NONE;
 
+        return view_as<CTakeDamageInfo>(data);
+    }
+
+    // Copy constructor.
+    public CTakeDamageInfo Copy()
+    {
+        MemoryBlock data = new MemoryBlock(ctakedamageinfoSize);
+        for (int offset = 0; offset < view_as<int>(ctakedamageinfoSize); offset += 4)
+            data.StoreToOffset(offset, Dereference(this.Address + view_as<Address>(offset)), NumberType_Int32);
         return view_as<CTakeDamageInfo>(data);
     }
 }

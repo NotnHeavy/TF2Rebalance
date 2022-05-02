@@ -117,7 +117,7 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("Blast radius decreased", 1.00); // -0% explosive radius
 
                 // Apply new attributes.
-                this.setAttribute("damage penalty", 0.80); // -20% damage penalty
+                this.setAttribute("damage penalty", 0.85); // -15% damage penalty
             }
             case 1104: // Air Strike. TODO: re-write damage distance mod calculation to be based upon rocket position.
             {

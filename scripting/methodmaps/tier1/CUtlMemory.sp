@@ -46,9 +46,9 @@ methodmap CUtlMemory
     {
         return this.m_pMemory + view_as<Address>(index * size);
     }
-    public void Set(int index, any value, NumberType size = NumberType_Int32)
+    public void Set(int index, any value, int size = 4, int offset = 0)
     {
-        int sizeBytes = size == NumberType_Int32 ? 4 : size == NumberType_Int16 ? 2 : 1;
-        WriteToValue(this.Address + view_as<Address>(pMemory) + view_as<Address>(index * sizeBytes), value, size);
+        NumberType bitdepth = size == 4 ? NumberType_Int32 : size == 2 ? NumberType_Int16 : NumberType_Int8;
+        WriteToValue(this.m_pMemory + view_as<Address>(index * size + offset), value, bitdepth);
     }
 }

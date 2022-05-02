@@ -216,6 +216,21 @@ methodmap Vector
         this.Y = right.Y;
         this.Z = right.Z;
     }
+
+    // Memory.
+    public static Vector Dereference(Address block, bool global = true)
+    {
+        float x = Dereference(block);
+        float y = Dereference(block + view_as<Address>(0x04));
+        float z = Dereference(block + view_as<Address>(0x08));
+        return Vector(x, y, z, global);
+    }
+    public void WriteToMemory(Address block)
+    {
+        WriteToValue(block, this.X);
+        WriteToValue(block + view_as<Address>(0x04), this.Y);
+        WriteToValue(block + view_as<Address>(0x08), this.Z);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -307,21 +322,6 @@ stock void AngleVectors(Vector angles, Vector forwardVector, Vector right = INVA
         right.SetBuffer(rightBuffer);
     if (up != INVALID_VECTOR)
         up.SetBuffer(upBuffer);
-}
-
-stock Vector GetVectorFromAddress(Address vector, bool global = true)
-{
-    float x = Dereference(vector);
-    float y = Dereference(vector + view_as<Address>(0x04));
-    float z = Dereference(vector + view_as<Address>(0x08));
-    return Vector(x, y, z, global);
-}
-
-stock void WriteToVector(Address block, Vector vector)
-{
-    WriteToValue(block, vector.X);
-    WriteToValue(block + view_as<Address>(0x04), vector.Y);
-    WriteToValue(block + view_as<Address>(0x08), vector.Z);
 }
 
 //////////////////////////////////////////////////////////////////////////////

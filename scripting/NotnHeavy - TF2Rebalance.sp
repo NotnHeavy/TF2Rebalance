@@ -99,6 +99,11 @@ Address CTFWeaponBase_m_pWeaponInfo;
 Address CTFWeaponBase_m_iWeaponMode;
 Address CTFWeaponInfo_m_WeaponData;
 
+char configMacros[][][] = 
+{
+    { "HOLSTER_CHANGE", "Note: The holster attribute is now independent of how long this weapon was equipped.\nIt now also applies if the user switches from one weapon to another <0.5s after holstering\nthis weapon." }
+};
+
 //////////////////////////////////////////////////////////////////////////////
 // TF2 CODE                                                                 //
 //////////////////////////////////////////////////////////////////////////////
@@ -492,9 +497,13 @@ public void OnGameFrame()
                 doesHaveWeapon.RechargeTime = regen;
             }
 
-            // If a player is no longer burning, disable the FromDegreaser check.
+            // If a player is no longer burning, disable the weapon checks.
             if (!player.m_Shared.InCond(TFCond_OnFire))
+            {
                 player.FromDegreaser = false;
+                if (!player.m_Shared.InCond(TFCond_Gas))
+                    player.FromGasPasser = false;
+            }
 
             // Extend the Sandman ball recharge duration from 10s to 15s. Hacky, but it works.
             doesHaveWeapon = player.GetWeapon(44);
@@ -586,6 +595,7 @@ Action EntityTouch(int entityIndex, int otherIndex)
     if (victim != INVALID_ENTITY && self.ClassContains("tf_projectile") != -1)
     {
         victim.LastProjectileEncountered = self;
+        victim.TimeSinceLastProjectileEncounter = GetGameTime();
         if (self.ClassEquals("tf_projectile_stun_ball"))
             pl_impact_stun_range_mutes = 2;
     }
@@ -797,8 +807,8 @@ MRESReturn Explode(int index, DHookReturn returnValue, DHookParam parameters)
     // Create an actual explosion with the Gas Passer.
     CBaseEntity entity = view_as<CBaseEntity>(index);
     CTFWeaponBase weapon = ToTFWeaponBase(entity.GetMemberEntity(Prop_Send, "m_hLauncher"));
-    MemoryBlock newInfo = new CTakeDamageInfo(entity, weapon.Owner, weapon, entity.GetAbsOrigin(), entity.GetAbsOrigin(), 100.00, DMG_BLAST | DMG_HALF_FALLOFF, 0, entity.GetAbsOrigin());
-    MemoryBlock radiusInfo = new CTFRadiusDamageInfo(newInfo, entity.GetAbsOrigin(), 200.00);
+    MemoryBlock newInfo = new CTakeDamageInfo(entity, weapon.Owner, weapon, entity.GetAbsOrigin(), entity.GetAbsOrigin(), 75.00, DMG_BLAST | DMG_HALF_FALLOFF, 0, entity.GetAbsOrigin());
+    MemoryBlock radiusInfo = new CTFRadiusDamageInfo(newInfo, entity.GetAbsOrigin(), 146.00);
     g_pGameRules.RadiusDamage(radiusInfo);
     delete newInfo;
     delete radiusInfo;
@@ -906,17 +916,6 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
         victim.LastProjectileEncountered.Remove();
     }
 
-    // Re-write the rampup/falloff with the Air Strike to be between the projectile's original position and the victim.
-    if (info.m_hWeapon.ItemDefinitionIndex == 1104 && victim != attacker)
-    {
-        float damage = 90.00;
-        info.m_hWeapon.HookValueFloat(damage, "damage penalty"); // can't pass methodmap properties by reference apparently.
-        damage *= RemapValClamped((info.m_hInflictor.SpawnPosition - victim.GetAbsOrigin()).Length(), 50.00, 1024.00, 1.25, 0.528); // 150% rampup, 52.8% falloff
-
-        info.m_bitsDamageType &= ~DMG_USEDISTANCEMOD;
-        info.m_flDamage = damage;
-    }
-
     // Handle with blast jumping for all classes, except for Soldier and Demoman (these are already dealt with).
     if ((info.m_bitsDamageType & DMG_BLAST || info.m_iDamageCustom == TF_CUSTOM_FLARE_EXPLOSION) && attacker == victim && victim.Class != TFClass_DemoMan && victim.Class != TFClass_Soldier && !(victim.GetFlags() & (FL_ONGROUND | FL_INWATER)))
     {
@@ -925,6 +924,16 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
         event.SetBool("playsound", false);
         event.Fire();
         victim.m_Shared.AddCond(TFCond_BlastJumping);
+    }
+    
+    // Gas Passer damage management.
+    if (info.m_hWeapon.ItemDefinitionIndex == 1180)
+    {
+        victim.FromGasPasser = true;
+        if (attacker == victim) // Deal 33% more self damage with the Gas Passer.
+            info.m_flDamage *= 1.33;
+        else if (victim.m_Shared.InCond(TFCond_OnFire) && info.m_bitsDamageType & DMG_BLAST && victim.TimeSinceLastProjectileEncounter == GetGameTime() && victim.LastProjectileEncountered.ClassEquals("tf_projectile_jar_gas")) // Deal mini-crit damage on direct hits.
+            info.SetCritType(victim, CRIT_MINI);
     }
 
     // Attribute hooks.
@@ -937,29 +946,55 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
             info.SetCritType(victim, CRIT_FULL);
 
         // Damage players connected onto the same dispenser beam with weapons using the damage_all_connected attribute.
+        // This code is VERY janky but I don't know how else to get this to work without it crashing.
         value = 0;
         info.m_hWeapon.HookValueInt(value, "damage_all_connected");
         if (value && !attacker.RecursiveCheck)
         {
-            attacker.RecursiveCheck = true;
             for (int i = 0; i < victim.m_Shared.GetNumHealers(); ++i)
             {
                 Healers_t healer = victim.m_Shared.m_aHealers.Get(i, healers_tSize);
-                CObjectDispenser dispenser = view_as<CObjectDispenser>(healer.m_pHealer);
                 if (healer.m_bDispenserHeal)
                 {
+                    CObjectDispenser dispenser = view_as<CObjectDispenser>(healer.m_pHealer);
+                    attacker.ConnectedInfo = info.Copy();
                     for (int v = 0; v < dispenser.m_hHealingTargets.Count(); ++v)
                     {
-                        CTFPlayer player = view_as<CTFPlayer>(GetCBaseEntityHandleFromAddress(dispenser.m_hHealingTargets.Get(v)));
-                        player.TakeDamage(info);
+                        CTFPlayer player = ToTFPlayer(CBaseEntity.GetFromHandle(dispenser.m_hHealingTargets.Get(v)));
+                        if (player != victim)
+                        {
+                            DataPack data = new DataPack();
+                            data.WriteCell(attacker);
+                            data.WriteCell(player);
+                            RequestFrame(test, data);
+                            ++attacker.RecursiveCheck;
+                        }
                     }
                 }
             }
-            attacker.RecursiveCheck = false;
+            if (!attacker.RecursiveCheck)
+                delete attacker.ConnectedInfo;
         }
+
+        // Count players covered in gasoline as wet.
+        value = 0;
+        info.m_hWeapon.HookValueInt(value, "crit_vs_wet_players");
+        if (value && (victim.m_Shared.InCond(TFCond_Gas) || victim.FromGasPasser))
+            info.SetCritType(victim, CRIT_FULL);
     }
     
     return MRES_Ignored;
+}
+
+void test(DataPack data)
+{
+    data.Reset();
+    CTFPlayer attacker = data.ReadCell();
+    CTFPlayer victim = data.ReadCell();
+    victim.TakeDamage(attacker.ConnectedInfo.Address);
+    attacker.RecursiveCheck -= 1;
+    if (!attacker.RecursiveCheck)
+        delete attacker.ConnectedInfo;
 }
 
 MRESReturn OnTakeDamagePost(int entity, DHookReturn returnValue, DHookParam parameters)
@@ -989,6 +1024,17 @@ MRESReturn OnTakeDamagePost(int entity, DHookReturn returnValue, DHookParam para
         victim.m_Shared.m_flBurnDuration = 1.5; // Prevent stacking with the afterburn duration.
     }
 
+    // Re-write the rampup/falloff with the Air Strike to be between the projectile's original position and the victim.
+    if (info.m_hWeapon.ItemDefinitionIndex == 1104 && victim != attacker && info.m_eCritType != CRIT_FULL)
+    {
+        float damage = 90.00;
+        info.m_hWeapon.HookValueFloat(damage, "damage penalty"); // can't pass methodmap properties by reference apparently.
+        damage *= RemapValClamped((info.m_hInflictor.SpawnPosition - victim.GetAbsOrigin()).Length(), 50.00, 1024.00, 1.25, info.m_eCritType == CRIT_MINI ? 1.00 : 0.528); // 150% rampup, 52.8% falloff
+
+        info.m_bitsDamageType &= ~DMG_USEDISTANCEMOD;
+        info.m_flDamage = damage;
+    }
+
     return MRES_Ignored;
 }
 
@@ -998,8 +1044,8 @@ MRESReturn OnTakeDamageAlive(int entity, DHookReturn returnValue, DHookParam par
     CTFPlayer victim = view_as<CTFPlayer>(entity);
     CTFPlayer attacker = view_as<CTFPlayer>(info.m_hAttacker);
 
-    // 30% less self damage from the flare guns if the Third Degree is equipped.
-    if (attacker == victim && info.m_iDamageCustom == TF_CUSTOM_FLARE_EXPLOSION && victim.GetWeapon(593) != INVALID_ENTITY)
+    // 30% less self damage from the flare guns and blast damage if the Third Degree is equipped.
+    if (attacker == victim && (info.m_iDamageCustom == TF_CUSTOM_FLARE_EXPLOSION || info.m_bitsDamageType & DMG_BLAST) && victim.GetWeapon(593) != INVALID_ENTITY)
         info.m_flDamage *= 0.70;
 
     return MRES_Ignored;
@@ -1039,12 +1085,14 @@ MRESReturn TeamFortress_CalculateMaxSpeed(int entity, DHookReturn returnValue, D
 
 MRESReturn AddCond(Address thisPointer, DHookParam parameters)
 {
-    /*
     CTFPlayerShared shared = view_as<CTFPlayerShared>(thisPointer);
     CTFPlayer client = ToTFPlayer(shared.m_pOuter);
     TFCond condition = parameters.Get(1);
+    /*
     float duration = parameters.Get(2);
     */
+    if (condition == TFCond_Gas)
+        client.FromGasPasser = true;
     return MRES_Ignored;
 }
 

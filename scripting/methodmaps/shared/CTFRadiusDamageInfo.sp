@@ -53,8 +53,8 @@ methodmap CTFRadiusDamageInfo < MemoryBlock
     }
     property Vector m_vecSrc
     {
-        public get() { return GetVectorFromAddress(this.Address + view_as<Address>(vecSrc)); }
-        public set(Vector vector) { WriteToVector(this.Address + view_as<Address>(vecSrc), vector); }
+        public get() { return Vector.Dereference(this.Address + view_as<Address>(vecSrc)); }
+        public set(Vector vector) { vector.WriteToMemory(this.Address + view_as<Address>(vecSrc)); }
     }
     property float m_flRadius
     {
