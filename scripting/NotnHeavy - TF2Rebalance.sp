@@ -46,6 +46,8 @@
 #define TF_STUN_BY_TRIGGER					(1<<7)
 #define TF_STUN_BOTH						TF_STUN_MOVEMENT | TF_STUN_CONTROLS
 
+#define NULL view_as<MemoryBlock>(0)
+
 #define PLUGIN_NAME "NotnHeavy - TF2Rebalance"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -957,12 +959,13 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
                 if (healer.m_bDispenserHeal)
                 {
                     CObjectDispenser dispenser = view_as<CObjectDispenser>(healer.m_pHealer);
-                    attacker.ConnectedInfo = info.Copy();
                     for (int v = 0; v < dispenser.m_hHealingTargets.Count(); ++v)
                     {
                         CTFPlayer player = ToTFPlayer(CBaseEntity.GetFromHandle(dispenser.m_hHealingTargets.Get(v)));
                         if (player != victim)
                         {
+                            if (attacker.ConnectedInfo == NULL)
+                                attacker.ConnectedInfo = info.Copy();
                             DataPack data = new DataPack();
                             data.WriteCell(attacker);
                             data.WriteCell(player);
@@ -972,8 +975,6 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
                     }
                 }
             }
-            if (!attacker.RecursiveCheck)
-                delete attacker.ConnectedInfo;
         }
 
         // Count players covered in gasoline as wet.
@@ -994,7 +995,10 @@ void test(DataPack data)
     victim.TakeDamage(attacker.ConnectedInfo.Address);
     attacker.RecursiveCheck -= 1;
     if (!attacker.RecursiveCheck)
+    {
         delete attacker.ConnectedInfo;
+        attacker.ConnectedInfo = NULL;
+    }
 }
 
 MRESReturn OnTakeDamagePost(int entity, DHookReturn returnValue, DHookParam parameters)
