@@ -64,6 +64,10 @@ They cannot strafe out of this."
         "change" "- 25% radius penalty."
         "change" "- Removed the 25% rocket jump self damage reduction."
         "change" "- Replaced the 25% clip bonus with a 25% clip reduction."
+        "change" "+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        "change" "+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     }
     "730"
     {
@@ -104,6 +108,14 @@ change was made to weaken bombardments."
     }
 
     // Pyro primaries.
+    "tf_weapon_flamethrower"
+    {
+        "name"     "Flamethrower"
+        "override" "true"
+        "change"   "+ Re-wrote the flame density mechanics. Flamethrower damage will start off at 50%,
+and it will slowly scale back up to 100% whenever you damage your target. Rather 
+than reset if no contact is made on next tick, it will scale back down in 1.25s."
+    }
     "40"
     {
         "name"   "Backburner"

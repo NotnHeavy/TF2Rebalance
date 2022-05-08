@@ -646,8 +646,8 @@ public void OnGameFrame()
             if (player.Class != TFClass_DemoMan && player.Class != TFClass_Soldier && player.GetFlags() & (FL_ONGROUND | FL_INWATER) && player.m_Shared.InCond(TFCond_BlastJumping))
                 player.m_Shared.RemoveCond(TFCond_BlastJumping);
 
-            // Return the flame density back to normal after 0.5s has passed since the user has last been flamed, in 1.5s, with the flamethrowers.
-            if (GetGameTime() - player.TimeSinceHitByFlames > 0.50)
+            // Return the flame density back to normal after 0.25s has passed since the user has last been flamed, in 1.5s, with the flamethrowers.
+            if (GetGameTime() - player.TimeSinceHitByFlames > 0.25)
                 player.FlameDensity -= 0.50 * (TICK_RATE_PRECISION / 1.50);
         }
     }
@@ -960,8 +960,6 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
 
         info.m_bitsDamageType &= ~DMG_USEDISTANCEMOD;
         info.m_flDamage = damage;
-
-        PrintToChatAll("%f : %f", oldDamage, info.m_flDamage);
     }
 
     // Always mini-crit with the shield while charging and the next melee crit is CRIT_MINI. This allows the Caber to also mini-crit.
@@ -1071,17 +1069,6 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
     if (info.m_hWeapon.ItemDefinitionIndex == 348 && (info.m_hAttacker.GetTeam() != victim.GetTeam() || info.m_hAttacker == victim))
         victim.FromSVF = info.m_hWeapon;
 
-    // Re-write the rampup/falloff with the Air Strike to be between the projectile's original position and the victim.
-    if (info.m_hWeapon.ItemDefinitionIndex == 1104 && victim != attacker && info.m_eCritType != CRIT_FULL)
-    {
-        float damage = 90.00;
-        info.m_hWeapon.HookValueFloat(damage, "mult_dmg"); // can't pass methodmap properties by reference apparently.
-        damage *= RemapValClamped((info.m_hInflictor.SpawnPosition - victim.GetAbsOrigin()).Length(), 50.00, 1024.00, 1.25, info.m_eCritType == CRIT_MINI ? 1.00 : 0.528); // 150% rampup, 52.8% falloff
-
-        info.m_bitsDamageType &= ~DMG_USEDISTANCEMOD;
-        info.m_flDamage = damage;
-    }
-
     // Attribute hooks.
     if (info.m_hWeapon != INVALID_ENTITY)
     {
@@ -1178,6 +1165,20 @@ MRESReturn OnTakeDamageAlive(int entity, DHookReturn returnValue, DHookParam par
     // 30% less self damage from the flare guns and blast damage if the Third Degree is equipped.
     if (attacker == victim && (info.m_iDamageCustom == TF_CUSTOM_FLARE_EXPLOSION || info.m_bitsDamageType & DMG_BLAST) && victim.GetWeapon(593) != INVALID_ENTITY)
         info.m_flDamage *= 0.70;
+
+    // Re-write the rampup/falloff with the Air Strike to be between the projectile's original position and the victim.
+    if (info.m_hWeapon.ItemDefinitionIndex == 1104 && victim != attacker && info.m_eCritType != CRIT_FULL)
+    {
+        float damage = 90.00;
+        info.m_hWeapon.HookValueFloat(damage, "mult_dmg"); // can't pass methodmap properties by reference apparently.
+        damage *= RemapValClamped((info.m_hInflictor.SpawnPosition - victim.GetAbsOrigin()).Length(), 50.00, 1024.00, 1.25, info.m_eCritType == CRIT_MINI ? 1.00 : 0.528); // 150% rampup, 52.8% falloff
+
+        if (info.m_eCritType == CRIT_MINI)
+            damage *= 1.35;
+
+        info.m_bitsDamageType &= ~DMG_USEDISTANCEMOD;
+        info.m_flDamage = damage;
+    }
 
     return MRES_Ignored;
 }

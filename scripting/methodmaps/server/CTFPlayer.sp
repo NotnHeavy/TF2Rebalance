@@ -23,6 +23,7 @@ enum struct ctfplayerData
     CEconEntity weapons[MAX_WEAPONS];
     char lastLoadoutEntry[256];
     bool shownWelcomeMenu;
+    int savedID;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC                                                                   //
@@ -347,6 +348,7 @@ methodmap CTFPlayer < CBaseEntity
     public void ResetLoadoutLastEntry()
     {
         ctfplayers[this].lastLoadoutEntry = "";
+        ctfplayers[this].savedID = 0;
     }
     public int CreateLoadoutPanel()
     {
@@ -373,28 +375,36 @@ methodmap CTFPlayer < CBaseEntity
         char buffer[256];
         bool found = false;
         bool foundNext = false;
+        char override[256] = "\0";
         do
         {
             pair.GetSectionName(buffer, sizeof(buffer));
             int index = StringToInt(buffer);
-            bool foundWeapon = this.GetWeapon(index) != INVALID_ENTITY || this.GetWeaponFromClassname(buffer) != INVALID_ENTITY;
-            if (!foundWeapon) // The weapon title might contain multiple weapon indexes.
+            CEconEntity foundWeapon = index != 0 ? this.GetWeapon(index) : view_as<CEconEntity>(INVALID_ENTITY); 
+            if (foundWeapon == INVALID_ENTITY)
+                foundWeapon = this.GetWeaponFromClassname(buffer);
+            if (foundWeapon == INVALID_ENTITY) // The weapon title might contain multiple weapon indexes.
             {
                 char indexes[10][256];
                 ExplodeString(buffer, " ", indexes, sizeof(indexes), sizeof(indexes[]), true);
                 for (int i = 0; i < sizeof(indexes); ++i)
                 {
                     int splitIndex = StringToInt(indexes[i]);
-                    if (this.GetWeapon(splitIndex) != INVALID_ENTITY)
+                    foundWeapon = splitIndex != 0 ? this.GetWeapon(splitIndex) : view_as<CEconEntity>(INVALID_ENTITY);
+                    if (foundWeapon != INVALID_ENTITY)
                     {
-                        foundWeapon = true;
                         index = splitIndex;
                         break;
                     }
                 }
             }
-            if (foundWeapon)
+            if (foundWeapon != INVALID_ENTITY)
             {
+                if (foundWeapon.ClassEquals(override))
+                {
+                    found = false;
+                    override = "\0";
+                }
                 if (found)
                 {
                     strcopy(ctfplayers[this].lastLoadoutEntry, 256, buffer);
@@ -403,24 +413,34 @@ methodmap CTFPlayer < CBaseEntity
                 }
                 if (pair.GotoFirstSubKey(false))
                 {
-                    bool forClass = true;
+                    int count = 0;
                     do
                     {
+                        if (count < ctfplayers[this].savedID)
+                        {
+                            ++count;
+                            continue;
+                        }
+                        ctfplayers[this].savedID = 0;
                         char key[256];
                         char value[256];
                         pair.GetSectionName(key, sizeof(key));
                         pair.GetString(NULL_STRING, value, sizeof(value));
-                        
-                        if (StrEqual(key, "name") || StringToInt(key) == index)
-                            menu.SetTitle(value);
-                        else if (StrEqual(key, "class"))
+
+                        if (menu.TextRemaining - strlen(value) < 0)
                         {
-                            TFClassType class = view_as<TFClassType>(StringToInt(value));
-                            if (this.Class != class)
-                            {
-                                forClass = false;
-                                break;
-                            }
+                            foundNext = true;
+                            ctfplayers[this].savedID = count;
+                            strcopy(ctfplayers[this].lastLoadoutEntry, 256, buffer);
+                            break;
+                        }
+                        
+                        if (StrEqual(key, "override") && StrEqual(value, "true"))
+                            strcopy(override, sizeof(override), buffer);
+                        else if (StrEqual(key, "name") || (StringToInt(key) == index && StringToInt(key) != 0))
+                        {
+                            menu.SetTitle(value);
+                            PrintToServer(value);
                         }
                         else if (StrEqual(key, "macro"))
                         {
@@ -435,10 +455,13 @@ methodmap CTFPlayer < CBaseEntity
                         }
                         else if (StrEqual(key, "change"))
                             menu.DrawText(value);
+                        
+                        ++count;
                     } while (pair.GotoNextKey(false));
                     pair.GoBack();
-                    if (forClass)
-                        found = true;
+                    found = true;
+                    if (foundNext)
+                        break;
                 }
             }
         } while (pair.GotoNextKey());
