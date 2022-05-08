@@ -27,10 +27,18 @@ methodmap CTFWearable < CEconEntity
     {
         switch (this.ItemDefinitionIndex)
         {
+            // Soldier secondary.
             case 444: // Mantreads.
             {
                 // Apply new attributes.
                 this.setAttribute("rocket jump damage reduction", 0.75); // -25% blast damage from rocket jumps
+            }
+
+            // Demoman primary.
+            case 405, 608: // Ali Baba's Wee Booties and Bootlegger.
+            {
+                // Apply new attributes.
+                this.setAttribute("rocket jump damage reduction", 0.40); // -60% blast damage from rocket jumps
             }
         }
     }

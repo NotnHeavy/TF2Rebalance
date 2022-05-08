@@ -7,7 +7,7 @@
 
 // Also I'm just going to combine the functions for QAngles/Vectors into one methodmap.
 
-// NOTE: I may rewrite this code, with the addition of the SourceScramble extension. This code was written before I included that extension.
+// NOTE: I may rewrite this code, with the addition of the SM-Memory extension. This code was written before I included that extension.
 
 #pragma semicolon true
 #pragma newdecls required

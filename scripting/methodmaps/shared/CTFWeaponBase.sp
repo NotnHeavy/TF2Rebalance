@@ -119,7 +119,7 @@ methodmap CTFWeaponBase < CEconEntity
                 // Apply new attributes.
                 this.setAttribute("damage penalty", 0.85); // -15% damage penalty
             }
-            case 1104: // Air Strike. TODO: re-write damage distance mod calculation to be based upon rocket position.
+            case 1104: // Air Strike.
             {
                 // Apply new attributes.
                 this.setAttribute("rocket jump damage reduction", 0.75); // -25% blast damage from rocket jumps
@@ -146,11 +146,33 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("single wep deploy time decreased", 1.00); // This weapon deploys 0% faster
                 
                 // Apply new attributes.
-                this.setAttribute("damage penalty", 0.65); // 35% damage penalty
+                this.setAttribute("damage penalty", 0.75); // 35% damage penalty
                 this.setAttribute("deploy time decreased", 0.5); // 50% faster weapon switch
             }
 
+            // Pyro secondary.
+            case 740: // Scorch Shot.
+            {
+                // Remove old attributes.
+                this.setAttribute("minicrit vs burning player", 0.00);
+
+                // Apply new attributes.
+                this.setAttribute("damage penalty", 0.50); // 50% damage penalty
+            }
+            case 1179: // Thermal Thruster.
+            {
+                // Apply new attributes.
+                this.setAttribute("thermal_thruster_air_launch", 1.00); // Able to re-launch while already in-flight
+                this.setAttribute("holster_anim_time", 0.5); // holster_anim_time
+            }
+
             // Pyro melee.
+            case 348: // Sharpened Volcano Fragment.
+            {
+                // Apply new attributes.
+                this.setAttribute("damage penalty", 0.10); // -90% damage penalty
+                this.setAttribute("minicrit vs burning player", 1.00); // 100% minicrits vs burning players
+            }
             case 593: // Third Degree.
             {
                 // Apply new attributes.
@@ -159,6 +181,16 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("single wep holster time increased", 1.35); // This weapon holsters 35% slower
             }
 
+            // Demoman primary.
+            case 308: // Loch-n-Load.
+            {
+                // Remove old attributes.
+                this.setAttribute("dmg bonus vs buildings", 1.00); // +0% damage vs buildings
+
+                // Apply new attributes.
+                this.setAttribute("damage bonus", 1.20); // +20% damage bonus
+            }
+            
             // Demoman melee.
             case 307: // Ullapool Caber.
             {

@@ -51,15 +51,11 @@ enum ECritType
 // CTAKEDAMAGEINFO METHODMAP                                                //
 //////////////////////////////////////////////////////////////////////////////
 
-methodmap CTakeDamageInfo < MemoryBlock
+methodmap CTakeDamageInfo < Pointer
 {
-    public static CTakeDamageInfo FromAddress(Address block)
+    public static CTakeDamageInfo FromAddress(any block)
     {
         return view_as<CTakeDamageInfo>(block);
-    }
-    property Address Address
-    {
-        public get() { return view_as<Address>(this); }
     }
     
     // CTakeDamageInfo members.
@@ -188,8 +184,8 @@ methodmap CTakeDamageInfo < MemoryBlock
     // Constructor.
     public CTakeDamageInfo(CBaseEntity inflictor, CBaseEntity attacker, CBaseEntity weapon, const Vector damageForce, const Vector damagePosition, float damage, int damageType, int killType, Vector reportedPosition)
     {
-        MemoryBlock data = new MemoryBlock(ctakedamageinfoSize);
-        CTakeDamageInfo wrapper = CTakeDamageInfo.FromAddress(data.Address);
+        Pointer pointer = Pointer(ctakedamageinfoSize);
+        CTakeDamageInfo wrapper = CTakeDamageInfo.FromAddress(pointer);
 
         wrapper.m_hInflictor = inflictor;
         if (attacker.Exists)
@@ -218,15 +214,14 @@ methodmap CTakeDamageInfo < MemoryBlock
         wrapper.m_flDamageForForce = 0.00;
         wrapper.m_eCritType = CRIT_NONE;
 
-        return view_as<CTakeDamageInfo>(data);
+        return wrapper;
     }
 
     // Copy constructor.
     public CTakeDamageInfo Copy()
     {
-        MemoryBlock data = new MemoryBlock(ctakedamageinfoSize);
-        for (int offset = 0; offset < view_as<int>(ctakedamageinfoSize); offset += 4)
-            data.StoreToOffset(offset, Dereference(this.Address + view_as<Address>(offset)), NumberType_Int32);
-        return view_as<CTakeDamageInfo>(data);
+        Pointer pointer = Pointer(ctakedamageinfoSize);
+        memcpy(pointer, this.Address, ctakedamageinfoSize);
+        return view_as<CTakeDamageInfo>(pointer);
     }
 }

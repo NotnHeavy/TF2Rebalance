@@ -26,7 +26,7 @@ enum struct cbaseentityData
     float rechargeTime;
     float lastHolsterTime;
     
-    // Panic Attack.
+    // Panic Attack and the flamethrowers.
     float spreadMultiplier;
     float lastShot;
 }
@@ -195,7 +195,7 @@ methodmap CBaseEntity
     {
         return GetEntityFlags(this.Index);
     }
-    public int TakeDamage(Address info)
+    public int TakeDamage(Pointer info)
     {
         return SDKCall(SDKCall_CBaseEntity_TakeDamage, this.Index, info);
     }

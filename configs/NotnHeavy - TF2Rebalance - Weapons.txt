@@ -117,7 +117,7 @@ change was made to weaken bombardments."
         "change" "+/- The afterburn penalty has been removed. Instead, the afterburn duration
 initially only lasts 1s and can only ramp up to 3s. This also applies to other 
 weapons that can ignite players until the player is no longer burning."
-        "change" "- 35% damage penalty."
+        "change" "- 25% damage penalty."
     }
 
     // Pyro secondaries.
@@ -127,6 +127,21 @@ weapons that can ignite players until the player is no longer burning."
         "change" "+ This weapon now extinguishes enemy players."
         "change" "- There is a 1s delay between extinguishing and firing."
         "change" "- The crits cap has been changed from 35 to 3."
+    }
+    "740"
+    {
+        "name"   "Scorch Shot"
+        "change" "- Increased the damage penalty from 35% to 50%."
+        "change" "- This weapon no longer mini-crits on burning targets."
+        "change" "- The knockback inflicted is not stronger if the target is burning."
+        "change" "- Afterburn duration is now capped at 6s."
+    }
+    "1179"
+    {
+        "name"   "Thermal Thruster"
+        "change" "+ Reduced deploy and holster time by 0.3s."
+        "change" "+ You can now re-launch the Thermal Thruster while already in flight."
+        "change" "+ Your velocity is no longer reset while jumping."
     }
     "1180"
     {
@@ -146,6 +161,17 @@ increased by the Gas Passer explosion."
         "name"  "Axtinguisher"
         "macro" "HOLSTER_CHANGE"
     }
+    "348"
+    {
+        "name"   "Sharpened Volcano Fragment"
+        "change" "+ When damaged by this weapon, you will be marked as a walking volcano, which
+stays until a short time after the victim stops burning. When dying in this state,
+an explosion will be created, with a radius of 146HU, dealing 30 damage and igniting 
+targets affected."
+        "change" "+ While marked as a walking volcano, incoming fire damage will mini-crit."
+        "change" "+ 100% mini-crits vs burning players"
+        "change" "- 90% damage penalty."
+    }
     "593"
     {
         "name"   "Third Degree"
@@ -160,6 +186,19 @@ increased by the Gas Passer explosion."
     {
         "name"   "Neon Annihilator"
         "change" "+ Deals crits to victims covered in or ignited by gas."
+    }
+
+    // Demoman primaries.
+    "308"
+    {
+        "name"   "Loch-n-Load"
+        "change" "+ The damage bonus is now universal."
+    }
+    "405 608"
+    {
+        "405"   "Ali Baba's Wee Booties"
+        "608"   "Bootlegger"
+        "change" "+ 60% less blast damage from blast jumps."
     }
 
     // Demoman melees.
@@ -203,8 +242,8 @@ longer weapon switch."
     "415"
     {
         "name"   "Reserve Shooter"
-        "change" "+ 20% damage bonus vs. airblasted targets."
-        "change" "- 15% damage penalty vs. grounded targets."
+        "change" "+ Mini-crits targets launched via airblast."
+        "change" "- 15% damage penalty vs. grounded or airblasted targets."
         "change" "- This weapon is not affected by global weapon switch speed bonuses."
     }
     "1101"

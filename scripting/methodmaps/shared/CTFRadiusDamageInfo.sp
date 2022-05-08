@@ -27,29 +27,18 @@ enum ctfradiusdamageinfoOffsets
 // CTFRADIUSDAMAGEINFO METHOD                                               //
 //////////////////////////////////////////////////////////////////////////////
 
-methodmap CTFRadiusDamageInfo < MemoryBlock
+methodmap CTFRadiusDamageInfo < Pointer
 {
-    public static CTFRadiusDamageInfo FromAddress(Address block)
+    public static CTFRadiusDamageInfo FromAddress(any block)
     {
         return view_as<CTFRadiusDamageInfo>(block);
     }
-    property Address Address
-    {
-        public get() { return view_as<Address>(this); }
-    }
 
     // CTFRadiusDamageInfo members.
-    /*
     property CTakeDamageInfo m_dmgInfo
     {
         public get() { return Dereference(this.Address + view_as<Address>(dmgInfo)); }
-        public set(CTakeDamageInfo value) { WriteToValue(this.Address + view_as<Address>(dmgInfo), value.Address); }
-    }
-    */
-    property MemoryBlock m_dmgInfo
-    {
-        public get() { return Dereference(this.Address + view_as<Address>(dmgInfo)); }
-        public set(MemoryBlock value) { WriteToValue(this.Address + view_as<Address>(dmgInfo), value.Address); }
+        public set(CTakeDamageInfo value) { WriteToValue(this.Address + view_as<Address>(dmgInfo), value); }
     }
     property Vector m_vecSrc
     {
@@ -87,11 +76,11 @@ methodmap CTFRadiusDamageInfo < MemoryBlock
         public set(float value) { WriteToValue(this.Address + view_as<Address>(flFalloff), value); }
     }
 
-    // Constructor.
-    public CTFRadiusDamageInfo(MemoryBlock info, const Vector srcIn, float radiusIn, CBaseEntity ignore = ENTITY_NULL, float rjRadiusIn = 0.00, float forceScaleIn = 1.00)
+    // Constructor and deconstructor.
+    public CTFRadiusDamageInfo(CTakeDamageInfo info, const Vector srcIn, float radiusIn, CBaseEntity ignore = ENTITY_NULL, float rjRadiusIn = 0.00, float forceScaleIn = 1.00)
     {
-        MemoryBlock data = new MemoryBlock(ctfradiusdamageinfoSize);
-        CTFRadiusDamageInfo wrapper = CTFRadiusDamageInfo.FromAddress(data.Address);
+        Pointer pointer = Pointer(ctfradiusdamageinfoSize);
+        CTFRadiusDamageInfo wrapper = CTFRadiusDamageInfo.FromAddress(pointer);
 
         wrapper.m_dmgInfo = info;
         wrapper.m_vecSrc = srcIn;
@@ -104,6 +93,6 @@ methodmap CTFRadiusDamageInfo < MemoryBlock
 
         SDKCall(SDKCall_CTFRadiusDamageInfo_CalculateFalloff, wrapper.Address);
 
-        return view_as<CTFRadiusDamageInfo>(data);
+        return wrapper;
     }
 }

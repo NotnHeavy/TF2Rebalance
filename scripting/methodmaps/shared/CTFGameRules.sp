@@ -16,8 +16,8 @@ methodmap CTFGameRules
     {
         return SDKCall(SDKCall_CTFGameRules_FlPlayerFallDamage, player.Index);
     }
-    public void RadiusDamage(MemoryBlock info)
+    public void RadiusDamage(CTFRadiusDamageInfo info)
     {
-        SDKCall(SDKCall_CTFGameRules_RadiusDamage, info.Address);
+        SDKCall(SDKCall_CTFGameRules_RadiusDamage, info);
     }
 }

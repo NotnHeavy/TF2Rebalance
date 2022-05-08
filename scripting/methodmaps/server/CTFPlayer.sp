@@ -38,6 +38,10 @@ enum struct ctfplayerData
     // Sandman.
     float timeUntilSandmanStunEnd;
 
+    // Flamethrowers.
+    float flameDensity;
+    float timeSinceHitByFlames;
+
     // Degreaser.
     bool onFire;
     bool fromDegreaser;
@@ -49,8 +53,12 @@ enum struct ctfplayerData
     // Gas Passer.
     bool fromGasPasser;
 
+    // Sharpened Volcano Fragment.
+    float timeSinceStoppedBurning;
+    CTFWeaponBase fromSVF;
+
     // Third Degreee.
-    MemoryBlock connectedInfo;
+    Pointer connectedInfo;
     int recursiveCheck;
 
     // Ullapool Caber.
@@ -140,6 +148,16 @@ methodmap CTFPlayer < CBaseEntity
         public get() { return ctfplayers[this].timeUntilSandmanStunEnd; }
         public set(float value) { ctfplayers[this].timeUntilSandmanStunEnd = value; }
     }
+    property float FlameDensity
+    {
+        public get() { return ctfplayers[this].flameDensity; }
+        public set(float value) { ctfplayers[this].flameDensity = clamp(value, 0.50, 1.00); }
+    }
+    property float TimeSinceHitByFlames
+    {
+        public get() { return ctfplayers[this].timeSinceHitByFlames; }
+        public set(float value) { ctfplayers[this].timeSinceHitByFlames = value; }
+    }
     property bool OnFire
     {
         public get() { return ctfplayers[this].onFire; }
@@ -160,15 +178,25 @@ methodmap CTFPlayer < CBaseEntity
         public get() { return ctfplayers[this].revengeCrits; }
         public set(int value) { ctfplayers[this].revengeCrits = value; }
     }
+    property float TimeSinceStoppedBurning
+    {
+        public get() { return ctfplayers[this].timeSinceStoppedBurning; }
+        public set(float value) { ctfplayers[this].timeSinceStoppedBurning = value; }
+    }
+    property CTFWeaponBase FromSVF
+    {
+        public get() { return ctfplayers[this].fromSVF; }
+        public set(CTFWeaponBase value) { ctfplayers[this].fromSVF = value; }
+    }
     property bool FromGasPasser
     {
         public get() { return ctfplayers[this].fromGasPasser; }
         public set(bool toggle) { ctfplayers[this].fromGasPasser = toggle; }
     }
-    property MemoryBlock ConnectedInfo
+    property Pointer ConnectedInfo
     {
         public get() { return ctfplayers[this].connectedInfo; }
-        public set(MemoryBlock value) { ctfplayers[this].connectedInfo = value; }
+        public set(Pointer value) { ctfplayers[this].connectedInfo = value; }
     }
     property int RecursiveCheck
     {
@@ -314,7 +342,7 @@ methodmap CTFPlayer < CBaseEntity
     }
     public float CalculateRadiusDamage(Vector damagePosition, float radius, float damage, float rampup, float falloff, bool center = true)
     {
-        return RemapValClamped((this.GetAbsOrigin(center) - damagePosition).Length(), 0.00, radius, damage * rampup, damage * falloff);
+        return RemapValClamped(this.GetAbsOrigin(center).DistTo(damagePosition), 0.00, radius, damage * rampup, damage * falloff);
     }
     public void ResetLoadoutLastEntry()
     {
@@ -349,7 +377,23 @@ methodmap CTFPlayer < CBaseEntity
         {
             pair.GetSectionName(buffer, sizeof(buffer));
             int index = StringToInt(buffer);
-            if (this.GetWeapon(index) != INVALID_ENTITY || this.GetWeaponFromClassname(buffer) != INVALID_ENTITY)
+            bool foundWeapon = this.GetWeapon(index) != INVALID_ENTITY || this.GetWeaponFromClassname(buffer) != INVALID_ENTITY;
+            if (!foundWeapon) // The weapon title might contain multiple weapon indexes.
+            {
+                char indexes[10][256];
+                ExplodeString(buffer, " ", indexes, sizeof(indexes), sizeof(indexes[]), true);
+                for (int i = 0; i < sizeof(indexes); ++i)
+                {
+                    int splitIndex = StringToInt(indexes[i]);
+                    if (this.GetWeapon(splitIndex) != INVALID_ENTITY)
+                    {
+                        foundWeapon = true;
+                        index = splitIndex;
+                        break;
+                    }
+                }
+            }
+            if (foundWeapon)
             {
                 if (found)
                 {
@@ -367,7 +411,7 @@ methodmap CTFPlayer < CBaseEntity
                         pair.GetSectionName(key, sizeof(key));
                         pair.GetString(NULL_STRING, value, sizeof(value));
                         
-                        if (StrEqual(key, "name"))
+                        if (StrEqual(key, "name") || StringToInt(key) == index)
                             menu.SetTitle(value);
                         else if (StrEqual(key, "class"))
                         {
@@ -389,7 +433,7 @@ methodmap CTFPlayer < CBaseEntity
                                 }
                             }
                         }
-                        else
+                        else if (StrEqual(key, "change"))
                             menu.DrawText(value);
                     } while (pair.GotoNextKey(false));
                     pair.GoBack();

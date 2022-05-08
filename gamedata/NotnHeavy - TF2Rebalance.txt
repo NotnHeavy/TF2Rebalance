@@ -206,6 +206,12 @@
 				"windows" "\x55\x8B\xEC\x83\xEC\x08\x53\x8B\x5D\x08\x56\x53"
 				"linux"   "@_ZN15CTFPlayerShared10RemoveCondE7ETFCondb"
 			}
+			"CTFPlayerShared::InCond"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x83\xEC\x08\x56\x57\x8B\x7D\x08\x8B\xF1\x83\xFF\x20"
+				"linux"   "@_ZNK15CTFPlayerShared6InCondE7ETFCond"
+			}
 			"CTFPlayerShared::Burn"
 			{
 				"library" "server"
@@ -411,6 +417,20 @@
 					"ignore_duration"
 					{
 						"type" "bool"
+					}
+				}
+			}
+			"CTFPlayerShared::InCond"
+			{
+				"signature" "CTFPlayerShared::InCond"
+				"callconv"  "thiscall"
+				"this"      "address"
+				"return"    "bool"
+				"arguments"
+				{
+					"ETFCond"
+					{
+						"type" "int"
 					}
 				}
 			}
