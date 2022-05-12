@@ -29,6 +29,18 @@
 					"signature" "CTFProjectile_EnergyRing::Create"
 				}
 			}
+
+			"ShortstopShove"
+			{
+				"windows"
+				{
+					"signature" "CTFPistol_ScoutPrimary::Push"
+				}
+				"linux"
+				{
+					"signature" "CTFPistol_ScoutPrimary::Push"
+				}
+			}
         }
 		"Offsets"
 		{
@@ -105,6 +117,11 @@
 				"windows" "107"
 				"linux"   "138"
 			}
+			"Memory_ShortstopPushbackValue"
+			{
+				"windows" "838"
+				"linux"   "1166"
+			}
 		}
 		"Signatures"
 		{
@@ -166,6 +183,13 @@
 				"library" "server"
 				"windows" "\x55\x8B\xEC\x53\x56\x57\x8B\x7D\x08\x8B\xD9\x8B\xCF\xE8\x2A\x2A\x2A\x2A"
 				"linux"   "@_ZN19CTFFlareGun_Revenge24ExtinguishPlayerInternalEP9CTFPlayerS1_"
+			}
+
+			"CTFPistol_ScoutPrimary::Push"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x81\xEC\x4C\x01\x00\x00\x56"
+				"linux"   "@_ZN22CTFPistol_ScoutPrimary4PushEv"
 			}
 
 			"CBaseObject::OnTakeDamage"

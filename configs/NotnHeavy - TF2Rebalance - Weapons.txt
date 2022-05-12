@@ -14,6 +14,7 @@
         "name"   "Shortstop"
         "change" "+ 35% slower reload instead of 50% slower reload."
         "change" "+ 20% health bonus from health packs while equipped."
+        "change" "+ Increased the shove force multiplier from 400 to 900. I.E. it is 125% stronger now."
     }
     "772"
     {
@@ -157,7 +158,7 @@ weapons that can ignite players until the player is no longer burning."
         "name"   "Thermal Thruster"
         "change" "+ Reduced holster time by 0.3s."
         "change" "+ You can now re-launch the Thermal Thruster while already in flight."
-        "change" "+ Your velocity is no longer reset while jumping."
+        //"change" "+ Your velocity is no longer reset while jumping."
     }
     "1180"
     {

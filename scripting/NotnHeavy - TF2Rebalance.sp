@@ -1,8 +1,5 @@
 // TODO: work on something similar to mini-crit impact sounds with the Flying Guillotine on stunned targets.
 // also i need to implement the gas passer treatment for the mad milk too.
-// also i need to think of s
-
-// make new repo when making this public.
 
 //////////////////////////////////////////////////////////////////////////////
 // MADE BY NOTNHEAVY. USES GPL-3, AS PER REQUEST OF SOURCEMOD               //
@@ -65,6 +62,10 @@ static int explosionModelIndex;
 static Address energyRingSpeedAddress;
 static float oldEnergyRingSpeed;
 static float newEnergyRingSpeed = 3000.00;
+static Address shortstopPushbackAddress; // .text:009531EA F3 0F 10 05 54 CF 1A 01                       movss   xmm0, ds:dword_11ACF54 (linux)
+                                         // .text:105BFBF2                 movss   xmm0, ds:dword_10708B6C (windows)
+static float oldShortstopPushback;
+static float newShortstopPushback = 1000.00;
 
 static ConVar tf_scout_stunball_base_duration;
 static ConVar tf_flamethrower_maxdamagedist;
@@ -377,6 +378,9 @@ public void OnPluginStart()
     energyRingSpeedAddress = GameConfGetAddress(config, "CreateEnergyRing") + view_as<Address>(GameConfGetOffset(config, "Memory_CreateEnergyRingVelocity"));
     oldEnergyRingSpeed = Dereference(energyRingSpeedAddress);
     WriteToValue(energyRingSpeedAddress, AddressOf(newEnergyRingSpeed));
+    shortstopPushbackAddress = GameConfGetAddress(config, "ShortstopShove") + view_as<Address>(GameConfGetOffset(config, "Memory_ShortstopPushbackValue"));
+    oldShortstopPushback = Dereference(shortstopPushbackAddress);
+    WriteToValue(shortstopPushbackAddress, AddressOf(newShortstopPushback));
 
     delete config;
 
@@ -410,8 +414,6 @@ public void OnPluginStart()
             CBaseEntity(i);
     }
 
-    PrintToServer("%f", RemapCosClamped(512.00, 0.00, 1024.00, 1.25, 0.528));
-
     PrintToServer("--------------------------------------------------------\n\"%s\" has loaded.\n--------------------------------------------------------", PLUGIN_NAME);
 }
 
@@ -423,6 +425,7 @@ public void OnMapStart()
 public void OnPluginEnd()
 {
     WriteToValue(energyRingSpeedAddress, oldEnergyRingSpeed);
+    WriteToValue(shortstopPushbackAddress, oldShortstopPushback);
     tf_parachute_aircontrol.RestoreDefault();
     tf_rocketpack_airborne_launch_absvelocity_preserved.RestoreDefault();
     tf_rocketpack_launch_absvelocity_preserved.RestoreDefault();
@@ -589,7 +592,7 @@ public void OnGameFrame()
     ++frame;
     pl_impact_stun_range_mutes = 0;
     tf_parachute_aircontrol.FloatValue = 5.00; // Reset B.A.S.E Jumper air control back to 100%.
-    tf_rocketpack_airborne_launch_absvelocity_preserved.IntValue = 1; // Do not reset the player's movement while using the Thermal Thruster.
+    //tf_rocketpack_airborne_launch_absvelocity_preserved.IntValue = 1; // Do not reset the player's movement while using the Thermal Thruster.
     tf_rocketpack_launch_absvelocity_preserved.IntValue = 1; // Do not reset the player's movement while using the Thermal Thruster.
     tf_rocketpack_launch_push.IntValue = 500; // yeet
 
