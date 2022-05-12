@@ -48,6 +48,10 @@
 #define TF_STUN_BY_TRIGGER					(1<<7)
 #define TF_STUN_BOTH						TF_STUN_MOVEMENT | TF_STUN_CONTROLS
 
+#define PI 3.14159265359
+
+#define MAX_DECAPITATIONS 4
+
 #define PLUGIN_NAME "NotnHeavy - TF2Rebalance"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -67,7 +71,6 @@ static ConVar tf_flamethrower_maxdamagedist;
 static ConVar tf_parachute_aircontrol;
 static ConVar tf_rocketpack_airborne_launch_absvelocity_preserved;
 static ConVar tf_rocketpack_launch_absvelocity_preserved;
-static ConVar tf_rocketpack_toggle_duration;
 static ConVar tf_rocketpack_launch_push;
 ConVar tf_weapon_criticals;
 ConVar tf_use_fixed_weaponspreads;
@@ -76,6 +79,7 @@ bool initiatedConVars;
 
 DHookSetup DHooks_CBaseEntity_Deflected;
 DHookSetup DHooks_CObjectDispenser_DispenseAmmo;
+DHookSetup DHooks_CTFSword_GetSwordSpeedMod;
 DHookSetup DHooks_CTFProjectile_Jar_Explode;
 
 DHookSetup DHooks_CTFWeaponBase_Deploy;
@@ -231,6 +235,12 @@ float max(float x, float y)
     return x > y ? x : y;
 }
 
+// Remap a number within a range to another set of numbers via cosine.
+float RemapCosClamped(float value, float min, float max, float x, float y)
+{
+    return y + (x - y) * (Cosine(PI * clamp((value - min) / (max - min), 0.00, 1.00)) / 2.00 + 0.50);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PLUGIN INFO                                                              //
 //////////////////////////////////////////////////////////////////////////////
@@ -271,6 +281,7 @@ public void OnPluginStart()
     // DHooks.
     DHooks_CBaseEntity_Deflected = DHookCreateFromConf(config, "CBaseEntity::Deflected");
     DHooks_CObjectDispenser_DispenseAmmo = DHookCreateFromConf(config, "CObjectDispenser::DispenseAmmo");
+    DHooks_CTFSword_GetSwordSpeedMod = DHookCreateFromConf(config, "CTFSword::GetSwordSpeedMod");
     DHooks_CTFProjectile_Jar_Explode = DHookCreateFromConf(config, "CTFProjectile_Jar::Explode");
 
     DHooks_CTFWeaponBase_Deploy = DHookCreateFromConf(config, "CTFWeaponBase::Deploy");
@@ -375,7 +386,6 @@ public void OnPluginStart()
     tf_parachute_aircontrol = FindConVar("tf_parachute_aircontrol");
     tf_rocketpack_airborne_launch_absvelocity_preserved = FindConVar("tf_rocketpack_airborne_launch_absvelocity_preserved");
     tf_rocketpack_launch_absvelocity_preserved = FindConVar("tf_rocketpack_launch_absvelocity_preserved");
-    tf_rocketpack_toggle_duration = FindConVar("tf_rocketpack_toggle_duration");
     tf_rocketpack_launch_push = FindConVar("tf_rocketpack_launch_push");
 
     tf_weapon_criticals = FindConVar("tf_weapon_criticals");
@@ -400,6 +410,8 @@ public void OnPluginStart()
             CBaseEntity(i);
     }
 
+    PrintToServer("%f", RemapCosClamped(512.00, 0.00, 1024.00, 1.25, 0.528));
+
     PrintToServer("--------------------------------------------------------\n\"%s\" has loaded.\n--------------------------------------------------------", PLUGIN_NAME);
 }
 
@@ -414,7 +426,6 @@ public void OnPluginEnd()
     tf_parachute_aircontrol.RestoreDefault();
     tf_rocketpack_airborne_launch_absvelocity_preserved.RestoreDefault();
     tf_rocketpack_launch_absvelocity_preserved.RestoreDefault();
-    tf_rocketpack_toggle_duration.RestoreDefault();
     tf_rocketpack_launch_push.RestoreDefault();
 }
 
@@ -547,7 +558,7 @@ void VolcanoExplosion(DataPack data)
 
     float buffer[3];
     victim.GetAbsOrigin().GetBuffer(buffer);
-    TE_SetupExplosion(buffer, explosionModelIndex, 10.0, 1, 0, 146, 0);
+    TE_SetupExplosion(buffer, explosionModelIndex, 10.0, 1, 0, 200, 0);
     TE_SendToAll();
 
     delete data;
@@ -580,7 +591,6 @@ public void OnGameFrame()
     tf_parachute_aircontrol.FloatValue = 5.00; // Reset B.A.S.E Jumper air control back to 100%.
     tf_rocketpack_airborne_launch_absvelocity_preserved.IntValue = 1; // Do not reset the player's movement while using the Thermal Thruster.
     tf_rocketpack_launch_absvelocity_preserved.IntValue = 1; // Do not reset the player's movement while using the Thermal Thruster.
-    tf_rocketpack_toggle_duration.FloatValue = 0.7; // Take only 0.7s to equip the Thermal Thruster.
     tf_rocketpack_launch_push.IntValue = 500; // yeet
 
     // Go through players.
@@ -912,6 +922,20 @@ MRESReturn ExtinguishPlayerInternal(int index, DHookReturn returnValue, DHookPar
     return MRES_Supercede;
 }
 
+MRESReturn GetSwordSpeedMod(int index, DHookReturn returnValue)
+{
+    CTFWeaponBase weapon = view_as<CTFWeaponBase>(index);
+    int decapitateType;
+    weapon.HookValueInt(decapitateType, "decapitate_type");
+    if (!decapitateType)
+    {
+        returnValue.Value = 1.0;
+        return MRES_Supercede;
+    }
+    returnValue.Value = 1.0 + intMin(MAX_DECAPITATIONS, weapon.Owner.GetMember(Prop_Send, "m_iDecapitations")) * 0.06;
+    return MRES_Supercede;
+}
+
 MRESReturn Explode(int index, DHookReturn returnValue, DHookParam parameters)
 {
     // Create an actual explosion with the Gas Passer.
@@ -947,14 +971,13 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
     if (!attacker.IsPlayer)
         return MRES_Ignored;
 
-    float oldDamage = info.m_flDamage;
 
     // Re-work the flame density system with Pyro's flamethrower.
     if (info.m_bitsDamageType & DMG_IGNITE && info.m_hWeapon != INVALID_ENTITY && info.m_hWeapon.ClassEquals("tf_weapon_flamethrower"))
     {
         float damage = 13.00 * victim.FlameDensity;
         info.m_hWeapon.HookValueFloat(damage, "mult_dmg");
-        damage *= RemapValClamped(attacker.GetAbsOrigin().DistTo(victim.GetAbsOrigin()), tf_flamethrower_maxdamagedist.FloatValue / 2.00, tf_flamethrower_maxdamagedist.FloatValue, 1.00, 0.50);
+        damage *= RemapCosClamped(attacker.GetAbsOrigin().DistTo(victim.GetAbsOrigin()), tf_flamethrower_maxdamagedist.FloatValue / 2.00, tf_flamethrower_maxdamagedist.FloatValue, 1.00, 0.50);
         victim.TimeSinceHitByFlames = GetGameTime();
         victim.FlameDensity += 0.04;
 
@@ -1037,7 +1060,7 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
     {
         // Damage numbers.
         info.m_bitsDamageType &= ~DMG_USEDISTANCEMOD; // Do not use internal rampup/falloff.
-        info.m_flDamage = 60.00 * RemapValClamped((victim.LastProjectileEncountered.SpawnPosition - victim.GetAbsOrigin()).Length(), 50.00, 800.000, 1.5, 0.5); // Deal 60 base damage with 150% rampup, 50% falloff.
+        info.m_flDamage = 60.00 * RemapCosClamped((victim.LastProjectileEncountered.SpawnPosition - victim.GetAbsOrigin()).Length(), 0.00, 700.000, 1.5, 0.5); // Deal 60 base damage with 150% rampup, 50% falloff.
         victim.LastProjectileEncountered.Remove();
     }
 
@@ -1171,7 +1194,7 @@ MRESReturn OnTakeDamageAlive(int entity, DHookReturn returnValue, DHookParam par
     {
         float damage = 90.00;
         info.m_hWeapon.HookValueFloat(damage, "mult_dmg"); // can't pass methodmap properties by reference apparently.
-        damage *= RemapValClamped((info.m_hInflictor.SpawnPosition - victim.GetAbsOrigin()).Length(), 50.00, 1024.00, 1.25, info.m_eCritType == CRIT_MINI ? 1.00 : 0.528); // 150% rampup, 52.8% falloff
+        damage *= RemapCosClamped((info.m_hInflictor.SpawnPosition - victim.GetAbsOrigin()).Length(), 0.00, 1024.00, 1.25, info.m_eCritType == CRIT_MINI ? 1.00 : 0.528); // 150% rampup, 52.8% falloff
 
         if (info.m_eCritType == CRIT_MINI)
             damage *= 1.35;
@@ -1225,6 +1248,8 @@ MRESReturn AddCond(Address thisPointer, DHookParam parameters)
     */
     if (condition == TFCond_Gas)
         client.FromGasPasser = true;
+    else if (condition == TFCond_Dazed && client.TimeSinceLastProjectileEncounter == -1.00) // Remove stunlock from Scorch Shot.
+        return MRES_Supercede;
     return MRES_Ignored;
 }
 
@@ -1255,7 +1280,7 @@ MRESReturn InCond(Address thisPointer, DHookReturn returnValue, DHookParam param
     // Do not inflict greater knockback on burning targets. This is janky but it's the simplest solution. I might replace this with memory patching at some point.
     if (condition == TFCond_OnFire && client.TimeSinceLastProjectileEncounter == GetGameTime() && weapon.ItemDefinitionIndex == 740)
     {
-        client.TimeSinceLastProjectileEncounter = 0.00;
+        client.TimeSinceLastProjectileEncounter = -1.00;
         returnValue.Value = false;
         return MRES_Supercede;
     }

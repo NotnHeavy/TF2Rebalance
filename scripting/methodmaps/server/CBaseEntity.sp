@@ -247,6 +247,8 @@ methodmap CBaseEntity
             DHookEntity(DHooks_CTFProjectile_Jar_Explode, true, index, _, Explode);
         else if (StrContains(cbaseentities[index].class, "tf_projectile_") != -1)
             DHookEntity(DHooks_CBaseEntity_Deflected, false, index, _, Deflected);
+        else if (StrEqual(cbaseentities[index].class, "tf_weapon_sword"))
+            DHookEntity(DHooks_CTFSword_GetSwordSpeedMod, false, index, _, GetSwordSpeedMod);
 
         return entity;
     }

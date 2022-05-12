@@ -75,6 +75,12 @@
 				"windows" "1700"
 				"linux"   "1704"
 			}
+			
+			"CTFSword::GetSwordSpeedMod"
+			{
+				"windows" "480"
+				"linux"   "488"
+			}
 
 			"CTFWeaponInfo_m_WeaponData"
 			{
@@ -272,6 +278,13 @@
 						"type" "cbaseentity"
 					}
 				}
+			}
+			"CTFSword::GetSwordSpeedMod"
+			{
+				"offset"   "CTFSword::GetSwordSpeedMod"
+				"hooktype" "entity"
+				"this"     "entity"
+				"return"   "float"
 			}
 			"CTFProjectile_Jar::Explode"
 			{

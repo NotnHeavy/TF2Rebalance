@@ -1,6 +1,13 @@
 // This config is used for the "loadout" command.
 "WeaponChanges"
 {
+    // Heavy changes. This is a very cheeky trick but it works.
+    "tf_weapon_minigun"
+    {
+        "name"   "Heavy Weapons Guy"
+        "change" "Deals 3x falling damage to the player you land on"
+    }
+
     // Scout primaries.
     "220"
     {
@@ -64,10 +71,6 @@ They cannot strafe out of this."
         "change" "- 25% radius penalty."
         "change" "- Removed the 25% rocket jump self damage reduction."
         "change" "- Replaced the 25% clip bonus with a 25% clip reduction."
-        "change" "+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-        "change" "+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     }
     "730"
     {
@@ -147,11 +150,12 @@ weapons that can ignite players until the player is no longer burning."
         "change" "- This weapon no longer mini-crits on burning targets."
         "change" "- The knockback inflicted is not stronger if the target is burning."
         "change" "- Afterburn duration is now capped at 6s."
+        "change" "- Your victim is not dazed when hit."
     }
     "1179"
     {
         "name"   "Thermal Thruster"
-        "change" "+ Reduced deploy and holster time by 0.3s."
+        "change" "+ Reduced holster time by 0.3s."
         "change" "+ You can now re-launch the Thermal Thruster while already in flight."
         "change" "+ Your velocity is no longer reset while jumping."
     }
@@ -178,7 +182,7 @@ increased by the Gas Passer explosion."
         "name"   "Sharpened Volcano Fragment"
         "change" "+ When damaged by this weapon, you will be marked as a walking volcano, which
 stays until a short time after the victim stops burning. When dying in this state,
-an explosion will be created, with a radius of 146HU, dealing 30 damage and igniting 
+an explosion will be created, with a radius of 200HU, dealing 30 damage and igniting 
 targets affected."
         "change" "+ While marked as a walking volcano, incoming fire damage will mini-crit."
         "change" "+ 100% mini-crits vs burning players"
@@ -214,6 +218,15 @@ targets affected."
     }
 
     // Demoman melees.
+    "132 266 482 1082"
+    {
+        "132"    "Eyelander"
+        "266"    "Horseless Headless Horsemann's Headtaker"
+        "482"    "Nessie's Nine Iron"
+        "1082"   "Eyelander"
+        "change" "- 80% less max secondary ammo on wearer."
+        "change" "- Each head, up to 4, gives 6% more speed instead of 8%."
+    }
     "307"
     {
         "name"   "Ullapool Caber"
@@ -224,6 +237,11 @@ your primary target."
         "change" "+/- This weapon no longer has a 100% deploy speed penalty, but it now has a 35%
 longer weapon switch."
         "change" "- This weapon now does 10% more self damage."
+    }
+    "327"
+    {
+        "name"   "Claidheamh Mòr"
+        "change" "+ 15 health restored on kill."
     }
 
     // Engineer primaries.

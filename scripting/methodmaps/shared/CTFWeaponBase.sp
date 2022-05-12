@@ -71,7 +71,7 @@ methodmap CTFWeaponBase < CEconEntity
             case 1103: // Back Scatter.
             {
                 // Remove old attributes.
-                this.setAttribute("spread penalty", 0.00); // -0% less accurate
+                this.setAttribute("spread penalty", 1.00); // -0% less accurate
             }
 
             // Scout secondary.
@@ -192,6 +192,11 @@ methodmap CTFWeaponBase < CEconEntity
             }
             
             // Demoman melee.
+            case 132, 266, 482, 1082: // Eyelander, Horseless Headless Horsemann's Headtaker and Nessie's Nine Iron.
+            {
+                // Apply new attributes.
+                this.setAttribute("maxammo secondary reduced", 0.20); // -80% max secondary ammo on wearer
+            }
             case 307: // Ullapool Caber.
             {
                 // Remove old attributes.
@@ -199,6 +204,11 @@ methodmap CTFWeaponBase < CEconEntity
 
                 // Apply new attributes.
                 this.setAttribute("deploy time increased", 1.35); // 35% longer weapon switch
+            }
+            case 327: // Claidheamh Mòr.
+            {
+                // Apply new attributes.
+                this.setAttribute("heal on kill", 15.00); // +15 health restored on kill
             }
 
             // Engineer primary.

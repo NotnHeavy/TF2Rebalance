@@ -438,10 +438,7 @@ methodmap CTFPlayer < CBaseEntity
                         if (StrEqual(key, "override") && StrEqual(value, "true"))
                             strcopy(override, sizeof(override), buffer);
                         else if (StrEqual(key, "name") || (StringToInt(key) == index && StringToInt(key) != 0))
-                        {
                             menu.SetTitle(value);
-                            PrintToServer(value);
-                        }
                         else if (StrEqual(key, "macro"))
                         {
                             for (int i = 0; i < sizeof(configMacros); ++i)
@@ -521,6 +518,7 @@ methodmap CTFPlayer < CBaseEntity
     {
         for (int ammo = 0; ammo < view_as<int>(TF_AMMO_COUNT); ++ammo)
             this.SetAmmoCount(this.GetMaxAmmo(ammo), ammo);
+        
         for (int i = 0; i < MAX_WEAPONS; ++i)
         {
             CTFWeaponBase entity = ToTFWeaponBase(ctfplayers[this].weapons[i]);
@@ -535,6 +533,12 @@ methodmap CTFPlayer < CBaseEntity
 
             entity.SetMember(Prop_Send, "m_iClip1", entity.GetMaxClip1());
         }
+
+        if (this.GetPlayerClass() == TFClass_Heavy)
+            this.setAttribute("boots falling stomp", 1.00);
+        else
+            this.setAttribute("boots falling stomp", 0.00);
+
         this.TimeSinceSwitchFromNoAmmoWeapon = 0.00;
     }
     
