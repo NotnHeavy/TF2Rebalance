@@ -14,7 +14,7 @@
         "name"   "Shortstop"
         "change" "+ 35% slower reload instead of 50% slower reload."
         "change" "+ 20% health bonus from health packs while equipped."
-        "change" "+ Increased the shove force multiplier from 400 to 900. I.E. it is 125% stronger now."
+        "change" "+ Increased the shove force multiplier from 400 to 1200. I.E. it is 150% stronger now."
     }
     "772"
     {

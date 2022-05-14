@@ -65,7 +65,7 @@ static float newEnergyRingSpeed = 3000.00;
 static Address shortstopPushbackAddress; // .text:009531EA F3 0F 10 05 54 CF 1A 01                       movss   xmm0, ds:dword_11ACF54 (linux)
                                          // .text:105BFBF2                 movss   xmm0, ds:dword_10708B6C (windows)
 static float oldShortstopPushback;
-static float newShortstopPushback = 1000.00;
+static float newShortstopPushback = 1200.00;
 
 static ConVar tf_scout_stunball_base_duration;
 static ConVar tf_flamethrower_maxdamagedist;
