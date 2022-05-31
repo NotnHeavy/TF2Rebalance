@@ -9,6 +9,7 @@
 #pragma newdecls required
 
 #define MAX_WEAPONS 48
+#define CLASSES 9
 
 //////////////////////////////////////////////////////////////////////////////
 // CTFPLAYER DATA                                                           //
@@ -28,6 +29,8 @@ enum struct ctfplayerData
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC                                                                   //
 //////////////////////////////////////////////////////////////////////////////
+
+    int equipMenuSlotChosen;
 
     float timeSinceSwitchFromNoAmmoWeapon;
     CTFWeaponBase lastWeaponWithSlowHolster;
@@ -64,8 +67,12 @@ enum struct ctfplayerData
 
     // Ullapool Caber.
     bool takingMiniCritDamage;
+
+    // Warrior's Spirit.
+    float timeUntilNoPounceCrits;
 }
 static ctfplayerData ctfplayers[MAXPLAYERS + 1];
+static CustomWeapon customWeapons[MAXPLAYERS + 1][CLASSES + 1][3]; // sourcemod let me put this inside enum structs dfsjjidfssdfsgfmsifksfd
 
 //////////////////////////////////////////////////////////////////////////////
 // CTFPLAYER METHODMAP                                                      //
@@ -81,8 +88,14 @@ methodmap CTFPlayer < CBaseEntity
 
         // CTFPlayer code.
         SDKHook(index, SDKHook_WeaponEquipPost, ClientEquippedWeapon);
-        SDKHook(index, SDKHook_OnTakeDamage, ClientTookFallDamage);
+        SDKHook(index, SDKHook_OnTakeDamage, ClientOnTakeDamage);
         ctfplayers[index].shownWelcomeMenu = false;
+
+        for (int i = 0; i < sizeof(customWeapons[]); ++i)
+        {
+            for (int v = 0; v < sizeof(customWeapons[][]); ++v)
+                customWeapons[index][i][v] = NULL_CUSTOM_WEAPON;
+        }
 
         return view_as<CTFPlayer>(index);
     }
@@ -95,6 +108,10 @@ methodmap CTFPlayer < CBaseEntity
     property CTFPlayerShared m_Shared
     {
         public get() { return view_as<CTFPlayerShared>(this.Address + view_as<Address>(FindSendPropInfo("CTFPlayer", "m_Shared"))); }
+    }
+    property CUtlVector m_hMyWearables
+    {
+        public get() { return view_as<CUtlVector>(this.Address + CTFPlayer_m_hMyWearables); }
     }
     public TFClassType GetPlayerClass()
     {
@@ -110,7 +127,11 @@ methodmap CTFPlayer < CBaseEntity
     {
         return SDKCall(SDKCall_CTFPlayer_GetMaxAmmo, this.Index, ammoIndex, classIndex);
     }
-    public void SetAmmoCount(int count, int ammoIndex)
+    public int GetAmmoCount(int ammoIndex = 1)
+    {
+        return this.GetMember(Prop_Send, "m_iAmmo", _, ammoIndex);
+    }
+    public void SetAmmoCount(int count, int ammoIndex = 1)
     {
         this.SetMember(Prop_Send, "m_iAmmo", count, _, ammoIndex);
     }
@@ -122,8 +143,17 @@ methodmap CTFPlayer < CBaseEntity
     {
         return GetClientUserId(this.Index);
     }
+    public void EquipWearable(CBaseEntity wearable)
+    {
+        SDKCall(SDKCall_CTFPlayer_EquipWearable, this, wearable);
+    }
 
     // Public properties.
+    property int EquipMenuSlotChosen
+    {
+        public get() { return ctfplayers[this].equipMenuSlotChosen; }
+        public set(int value) { ctfplayers[this].equipMenuSlotChosen = value; }
+    }
     property float TimeSinceSwitchFromNoAmmoWeapon
     {
         public get() { return ctfplayers[this].timeSinceSwitchFromNoAmmoWeapon; }
@@ -209,6 +239,11 @@ methodmap CTFPlayer < CBaseEntity
         public get() { return ctfplayers[this].takingMiniCritDamage; }
         public set(bool toggle) { ctfplayers[this].takingMiniCritDamage = toggle; }
     }
+    property float TimeUntilNoPounceCrits
+    {
+        public get() { return ctfplayers[this].timeUntilNoPounceCrits; }
+        public set(float value) { ctfplayers[this].timeUntilNoPounceCrits = value; }
+    }
 
     // Property wrappers.
     property bool Alive
@@ -250,6 +285,14 @@ methodmap CTFPlayer < CBaseEntity
     }
 
     // Public methods.
+    public int GetSteamAccountID()
+    {
+        return GetSteamAccountID(this.Index);
+    }
+    public void AddCustomAttribute(const char[] attribute, float value, float duration = -1.0)
+    {
+        TF2Attrib_AddCustomPlayerAttribute(this.Index, attribute, value, duration);
+    }
     public CTFWeaponBase GetWeaponFromSlot(int slot)
     {
         return view_as<CTFWeaponBase>(GetPlayerWeaponSlot(this.Index, slot));
@@ -273,10 +316,22 @@ methodmap CTFPlayer < CBaseEntity
             }
         }
 
-        // Iterate through wearables.
+        // Iterate through wearables. [ Will be removed soon. This code does not work due to m_hOwnerEntity not always being set on time. ]
+        /*
         for (CTFWearable entity = view_as<CTFWearable>(MAXPLAYERS); entity < view_as<CTFWearable>(MAX_ENTITY_COUNT); ++entity)
         {
             if (entity.Exists && entity.IsWearable && entity.Owner == this)
+            {
+                this.registerToWeaponList(entity);
+                entity.ApplyNewAttributes();
+            }
+        }
+        */
+        // Iterate through wearables.
+        for (int i = 0, v = this.m_hMyWearables.Count(); i < v; ++i)
+        {
+            CTFWearable entity = view_as<CTFWearable>(CBaseEntity.GetFromHandle(this.m_hMyWearables.Get(i)));
+            if (entity.Exists)
             {
                 this.registerToWeaponList(entity);
                 entity.ApplyNewAttributes();
@@ -324,6 +379,10 @@ methodmap CTFPlayer < CBaseEntity
         }
         return view_as<CEconEntity>(INVALID_ENTITY);
     }
+    public void GetAllWeapons(CEconEntity weapons[MAX_WEAPONS])
+    {
+        MemCopy(AddressOfArray(weapons), AddressOfArray(ctfplayers[this].weapons), sizeof(weapons));
+    }
     public void Heal(int add, bool capOnEvent = false)
     {
         // Show that player got healed.
@@ -352,16 +411,9 @@ methodmap CTFPlayer < CBaseEntity
     }
     public int CreateLoadoutPanel()
     {
-        // Create the file name for the weapon changes list.
-        static char list[PLATFORM_MAX_PATH];
-        if (list[0] == '\0')
-            Format(list, PLATFORM_MAX_PATH, "addons/sourcemod/configs/%s - Weapons.txt", PLUGIN_NAME);
-        if (!FileExists(list, true))
-            ThrowError("%s does not exist in your /tf/ directory!", list);
-
         // Load the file with the keyvalues methodmap.
         KeyValues pair = new KeyValues("WeaponChanges");
-        pair.ImportFromFile(list);
+        pair.ImportFromFile(configList);
         if (ctfplayers[this].lastLoadoutEntry[0] != '\0')
             pair.JumpToKey(ctfplayers[this].lastLoadoutEntry);
         else if (!pair.GotoFirstSubKey())
@@ -486,7 +538,8 @@ methodmap CTFPlayer < CBaseEntity
 
         Panel menu = new Panel();
         menu.SetTitle("Welcome to NotnHeavy's TF2Rebalance server!");
-        menu.DrawText("Use !loadout (/loadout for silenced command) to check your loadout!");
+        menu.DrawText("Use !loadout (/loadout for silenced command) to check your loadout.");
+        menu.DrawText("Use !equip (/equip for silenced comamnd) to equip custom weapons.");
         menu.DrawText("I am still working on rebalances though!");
         menu.DrawText(" ");
         
@@ -541,7 +594,116 @@ methodmap CTFPlayer < CBaseEntity
 
         this.TimeSinceSwitchFromNoAmmoWeapon = 0.00;
     }
-    
+    public void RemoveWeaponSlot(int slot)
+    {
+        if (this.GetWeaponFromSlot(slot) != INVALID_ENTITY)
+            TF2_RemoveWeaponSlot(this.Index, slot);
+        else
+        {
+            CEconEntity weapons[MAX_WEAPONS];
+            this.GetAllWeapons(weapons);
+            for (int i = 0; i < sizeof(weapons); ++i)
+            {
+                CTFWearable wearable = view_as<CTFWearable>(weapons[i]);
+                if (wearable != INVALID_ENTITY && wearable.IsWearable && wearable.GetDefaultItemSlot() == slot)
+                {
+                    TF2_RemoveWearable(this.Index, wearable.Index);
+                    break;
+                }
+            }
+        }
+    }
+    public void EquipWeapon(CEconEntity weapon)
+    {
+        if (weapon.IsWearable)
+            this.EquipWearable(weapon);
+        else if (weapon.IsBaseCombatWeapon)
+        {
+            CTFWeaponBase tfweapon = ToTFWeaponBase(weapon);
+            EquipPlayerWeapon(this.Index, tfweapon.Index);
+            int ammoType = tfweapon.GetMember(Prop_Send, "m_iPrimaryAmmoType");
+            if (ammoType != -1)
+                this.SetAmmoCount(tfweapon.GetMaxClip1(), tfweapon.GetMember(Prop_Send, "m_iPrimaryAmmoType"));
+        }
+    }
+    public void AllocateNewWeapon(char name[256], int index)
+    {
+        // Create weapon.
+        TF2_TranslateWeaponEntForClass(this.Class, name, sizeof(name));
+        CEconEntity weapon = CBaseEntity.Create(name);
+        weapon.SetMember(Prop_Send, "m_iItemDefinitionIndex", index);
+        weapon.SetMember(Prop_Send, "m_bInitialized", 1);
+        weapon.Dispatch();
+
+        // Set owner.
+        weapon.SetMember(Prop_Send, "m_iAccountID", this.GetSteamAccountID());
+        weapon.SetMemberEntity(Prop_Send, "m_hOwnerEntity", this);
+
+        // Equip weapon.
+        this.RemoveWeaponSlot(weapon.GetDefaultItemSlot());
+        this.EquipWeapon(weapon);
+    }
+    public void ApplyCustomWeapons()
+    {
+        for (int i = 0; i < sizeof(customWeapons[]); ++i)
+        {
+            for (int v = 0; v < sizeof(customWeapons[][]); ++v)
+            {
+                if (i == view_as<int>(this.Class) && customWeapons[this][i][v] != NULL_CUSTOM_WEAPON)
+                {
+                    char objectName[256];
+                    customWeapons[this][i][v].GetObject(objectName);
+                    this.AllocateNewWeapon(objectName, customWeapons[this][i][v].ItemDefinitionIndex);
+                }
+            }
+        }
+    }
+    /*
+    // This gives the player the Gunboats.
+    public void temp()
+    {
+        customWeapons[this][view_as<int>(TFClass_DemoMan)][1] = view_as<CustomWeapon>(1);
+    }
+    */
+    public void CreateEquipMenu()
+    {
+        Menu menu = new Menu(ShowEquipMenuAction);
+        menu.OptionFlags = MENUFLAG_NO_SOUND;
+        menu.ExitButton = true;
+        if (this.EquipMenuSlotChosen == -1)
+        {
+            menu.SetTitle("Choose the loadout slot:");
+            menu.AddItem("Primary", "Primary");
+            menu.AddItem("Secondary", "Secondary");
+            menu.AddItem("Melee", "Melee");
+            
+        }
+        else
+        {
+            menu.Pagination = true;
+            menu.SetTitle("Choose your weapon:");
+            menu.AddItem("0", "Default");
+            for (CustomWeapon definition = view_as<CustomWeapon>(1); definition != CustomWeapon.Length(); ++definition)
+            {
+                if (definition.Slot == this.EquipMenuSlotChosen && definition.AllowedOnClass(this.Class) /*definition.Class == this.Class*/)
+                {
+                    char name[256];
+                    char index[256];
+                    definition.GetName(name);
+                    IntToString(definition.Index, index, sizeof(index));
+                    if (customWeapons[this][view_as<int>(this.Class)][definition.Slot] == definition)
+                        Format(name, sizeof(name), "(Equipped) %s", name);
+                    menu.AddItem(index, name);
+                }
+            }
+        }
+        menu.Display(this.Index, MENU_TIME_FOREVER);
+    }
+    public void SetCustomWeapon(int slot, CustomWeapon definition)
+    {
+        customWeapons[this][view_as<int>(this.Class)][slot] = definition;
+    }
+
     // These would've been a part of another methodmap (IHasAttributes) but multiple inheritance is not a feature, at least as of SM 1.10.
     public float GetAttribute(const char[] attribute)
     {

@@ -41,11 +41,15 @@ methodmap CTFWeaponBase < CEconEntity
     {
         if (!this.Exists)
             return 0;
-        return SDKCall(SDKCall_CTFWeaponBase_GetMaxClip1, this.Index);
+        return SDKCall(SDKCall_CTFWeaponBase_GetMaxClip1, this);
     }
     public int GetName()
     {
-        return SDKCall(SDKCall_CBaseCombatWeapon_GetName, this.Index);
+        return SDKCall(SDKCall_CBaseCombatWeapon_GetName, this);
+    }
+    public int GetSlot()
+    {
+        return SDKCall(SDKCall_CBaseCombatWeapon_GetSlot, this);
     }
 
     // Public methods.
@@ -85,6 +89,11 @@ methodmap CTFWeaponBase < CEconEntity
             }
 
             // Scout melee.
+            case 44: // Sandman.
+            {
+                // Apply new attributes.
+                this.setAttribute("deploy time increased", 1.35); // 35% longer weapon switch
+            }
             case 349: // Sun-on-a-Stick.
             {
                 // Remove old attributes.
@@ -95,6 +104,12 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("fire rate penalty", 1.20); // -20% slower firing speed
                 this.setAttribute("dmg penalty vs nonburning", 0.50); // -50% damage vs non-burning players
                 this.setAttribute("crit mod disabled", 0.00); // No random critical hits
+            }
+            case 355: // Fan O'War
+            {
+                // Apply new attributes.
+                this.setAttribute("switch from wep deploy time decreased", 0.80); // This weapon holsters 20% faster
+                this.setAttribute("single wep deploy time decreased", 0.80); // This weapon deploys 20% faster
             }
 
             // Soldier primary.
@@ -108,7 +123,7 @@ methodmap CTFWeaponBase < CEconEntity
                 // Apply new attributes.
                 this.setAttribute("clip size penalty", 0.75); // -25% clip size
                 this.setAttribute("Blast radius decreased", 0.75); // -25% explosion radius
-                this.setAttribute("switch from wep deploy time decreased", 0.90); // This weapon holsters 10% faster
+                this.setAttribute("switch from wep deploy time decreased", 0.80); // This weapon holsters 20% faster
                 this.setAttribute("single wep deploy time decreased", 0.80); // This weapon deploys 20% faster
             }
             case 730: // Beggar's Bazooka.
@@ -123,6 +138,13 @@ methodmap CTFWeaponBase < CEconEntity
             {
                 // Apply new attributes.
                 this.setAttribute("rocket jump damage reduction", 0.75); // -25% blast damage from rocket jumps
+            }
+
+            // Soldier secondary.
+            case 442: // Righteous Bison.
+            {
+                // Apply new attributes.
+                this.setAttribute("Reload time increased", 1.25); // 25% slower reload time
             }
 
             // Soldier melee.
@@ -185,10 +207,13 @@ methodmap CTFWeaponBase < CEconEntity
             case 308: // Loch-n-Load.
             {
                 // Remove old attributes.
-                this.setAttribute("dmg bonus vs buildings", 1.00); // +0% damage vs buildings
+                this.setAttribute("sticky air burst mode", 0.00); // Launched bombs shatter on surfaces
 
                 // Apply new attributes.
-                this.setAttribute("damage bonus", 1.20); // +20% damage bonus
+                this.setAttribute("clip size penalty", 0.50); // -50% clip size
+                this.setAttribute("Reload time increased", 1.25); // +25% slower reload time
+                this.setAttribute("mod mini-crit airborne", 1.00); // Mini-crits targets launched airborne by explosions, grapple hooks or rocket packs
+                this.setAttribute("damage blast push", 2.00); // Attrib_DamageBlastPush
             }
             
             // Demoman melee.
@@ -196,6 +221,11 @@ methodmap CTFWeaponBase < CEconEntity
             {
                 // Apply new attributes.
                 this.setAttribute("maxammo secondary reduced", 0.20); // -80% max secondary ammo on wearer
+            }
+            case 172: // Scotsman's Skullcutter.
+            {
+                // Apply new attributes.
+                this.setAttribute("mod crit while airborne", 1.00); // Deals crits while the wielder is rocket jumping
             }
             case 307: // Ullapool Caber.
             {
@@ -211,11 +241,46 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("heal on kill", 15.00); // +15 health restored on kill
             }
 
+            // Heavy primary.
+            case 41: // Natascha.
+            {
+                // Remove old attributes.
+                this.setAttribute("slow enemy on hit", 0.00); // On Hit: 0% chance to slow target
+                this.setAttribute("spunup_damage_resistance", 1.00); // 0% damage resistance when below 50% health and spun up
+
+                // Apply new attributes.
+                this.setAttribute("heal on kill", 50.00); // +50% health restored on kill
+            }
+            case 312: // Brass Beast.
+            {
+                // Apply new attributes.
+                this.setAttribute("aiming movespeed decreased", 0.60); // -40% slower move speed while deployed
+                this.setAttribute("minigun spinup time increased", 1.40); // 40% slower spin up time
+            }
+
+            // Heavy melee.
+            case 310: // Warrior's Spirit.
+            {
+                // Remove old attributes.
+                this.setAttribute("dmg taken increased", 1.00); // 0% damage vulnerability to wearer
+
+                // Apply new attributes.
+                this.setAttribute("fire rate penalty", 1.20); // 20% slower firing speed
+            }
+            case 426: // Eviction Notice.
+            {
+                // Remove old attributes.
+                this.setAttribute("mult_player_movespeed_active", 1.00); // 0% faster move speed on wearer
+                this.setAttribute("mod_maxhealth_drain_rate", 0.00); // Maximum health is drained while item is active
+
+                // Apply new attributes.
+                this.setAttribute("fire rate bonus", 0.50); // 50% faster firing speed
+            }
+
             // Engineer primary.
             case 588: // Pomson 6000.
             {
-                // Apply new attributes.
-                this.setAttribute("Reload time decreased", 0.75); // +25% faster reload time
+                // Remove old attributes.
             }
         }
         if (this.ClassEquals("tf_weapon_jar")) // Jarate.

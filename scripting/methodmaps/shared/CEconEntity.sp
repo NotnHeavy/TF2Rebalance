@@ -8,6 +8,8 @@
 #pragma semicolon true 
 #pragma newdecls required
 
+#define M_IDEFAULTITEMSLOTOFFSET view_as<Address>(400)
+
 //////////////////////////////////////////////////////////////////////////////
 // CECONENTITY METHODMAP                                                    //
 //////////////////////////////////////////////////////////////////////////////
@@ -55,5 +57,13 @@ methodmap CEconEntity < CBaseEntity
     public void HookValueInt(int& value, const char[] attribute)
     {
         value = TF2Attrib_HookValueInt(value, attribute, this.Index);
+    }
+
+    public int GetDefaultItemSlot()
+    {
+        CustomWeapon definition = CustomWeapon.FromItemDefinitionIndex(this.ItemDefinitionIndex);
+        if (definition != NULL_CUSTOM_WEAPON)
+            return definition.Slot;
+        return Dereference(GetItemDefinition(this.ItemDefinitionIndex) + M_IDEFAULTITEMSLOTOFFSET);
     }
 }

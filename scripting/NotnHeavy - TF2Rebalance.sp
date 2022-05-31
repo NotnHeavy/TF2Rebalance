@@ -11,8 +11,8 @@
 // This plugin also uses DHooks with Detours by Dr!fter. Unless compiled with >= SM 1.11, you'll have to include the plugin below:
 // https://forums.alliedmods.net/showthread.php?t=180114
 
-// For dynamic memory allocation, this also uses nosoop's SourceScramble extension. this plugin may use scags' sm-memory instead.
-// https://github.com/nosoop/SMExt-SourceScramble
+// For dynamic memory allocation, this also Scags' SM-Memory extension.
+// https://forums.alliedmods.net/showthread.php?t=327729
 
 #pragma semicolon true 
 #pragma newdecls required
@@ -31,8 +31,7 @@
 #define TICK_RATE 66
 #define TICK_RATE_PRECISION GetTickInterval()
 
-#define FLIGHT_TIME_TO_MAX_STUN	1.0
-#define FLIGHT_TIME_TO_MAX_SLOWDOWN_RAMPUP 0.8
+#define FLIGHT_TIME_TO_MAX_STUN	0.8
 
 #define TF_STUN_NONE						0
 #define TF_STUN_MOVEMENT					(1<<0)
@@ -48,6 +47,8 @@
 #define PI 3.14159265359
 
 #define MAX_DECAPITATIONS 4
+
+#define CGAMETRACE_SIZE 104
 
 #define PLUGIN_NAME "NotnHeavy - TF2Rebalance"
 
@@ -66,6 +67,13 @@ static Address shortstopPushbackAddress; // .text:009531EA F3 0F 10 05 54 CF 1A 
                                          // .text:105BFBF2                 movss   xmm0, ds:dword_10708B6C (windows)
 static float oldShortstopPushback;
 static float newShortstopPushback = 1200.00;
+static Address steakSpeedCapMultiplierAddress; // .text:104C688E F3 0F 10 45 E8                                movss   xmm0, [ebp+var_18]
+                                               // .text:104C6893 8B CF                                         mov     ecx, edi
+                                               // .text:104C6895 F3 0F 59 05 BC D2 7E 10                       mulss   xmm0, ds:dword_107ED2BC
+                                               // .text:104C689D 6A 13                                         push    13h
+                                               // .text:104C689F F3 0F 11 45 E8                                movss   [ebp+var_18], xmm0
+static float oldSteakSpeedCapMultiplier;
+static float newSteakSpeedCapMultiplier = 2.260; // 520.00 / 230.00;
 
 static ConVar tf_scout_stunball_base_duration;
 static ConVar tf_flamethrower_maxdamagedist;
@@ -78,14 +86,19 @@ ConVar tf_use_fixed_weaponspreads;
 ConVar notnheavy_tf2rebalance_use_fixed_falldamage;
 bool initiatedConVars;
 
+char configList[PLATFORM_MAX_PATH];
+
 DHookSetup DHooks_CBaseEntity_Deflected;
+DHookSetup DHooks_CBaseEntity_VPhysicsCollision;
 DHookSetup DHooks_CObjectDispenser_DispenseAmmo;
 DHookSetup DHooks_CTFSword_GetSwordSpeedMod;
 DHookSetup DHooks_CTFProjectile_Jar_Explode;
 
 DHookSetup DHooks_CTFWeaponBase_Deploy;
+DHookSetup DHooks_CTFWeaponBase_ReloadSingly;
 DHookSetup DHooks_CTFWeaponBaseGun_GetWeaponSpread;
 DHookSetup DHooks_CTFFlareGun_Revenge_ExtinguishPlayerInternal;
+DHookSetup DHooks_CTFLunchBox_ApplyBiteEffects;
 DHookSetup DHooks_CBaseObject_OnTakeDamage;
 DHookSetup DHooks_CTFPlayer_OnTakeDamage;
 DHookSetup DHooks_CTFPlayer_OnTakeDamage_Alive;
@@ -96,8 +109,14 @@ DHookSetup DHooks_CTFPlayerShared_InCond;
 DHookSetup DHooks_CTFGameRules_FlPlayerFallDamage;
 
 Handle SDKCall_CBaseCombatWeapon_GetName;
+Handle SDKCall_CBaseCombatWeapon_GetSlot;
 Handle SDKCall_CTFWeaponBase_GetMaxClip1;
+Handle SDKCall_CTFWeaponBaseGrenadeProj_Detonate;
+Handle SDKCall_CTFGrenadePipebombProjectile_GetDamageType;
+Handle SDKCall_CTFPlayer_EquipWearable;
 
+Handle SDKCall_GEconItemSchema;
+Handle SDKCall_CEconItemSchema_GetItemDefinition;
 Handle SDKCall_CBaseCombatWeapon_Deploy;
 Handle SDKCall_ExtinguishPlayer;
 Handle SDKCall_CBaseEntity_TakeDamage;
@@ -113,10 +132,13 @@ Address CTFWeaponBase_m_flLastDeployTime;
 Address CTFWeaponBase_m_pWeaponInfo;
 Address CTFWeaponBase_m_iWeaponMode;
 Address CTFWeaponInfo_m_WeaponData;
+Address CTFGrenadePipebombProjectile_m_bWallShatter;
+Address CTFPlayer_m_hMyWearables;
 
 char configMacros[][][] = 
 {
-    { "HOLSTER_CHANGE", "Note: The holster attribute is now independent of how long this weapon was equipped.\nIt now also applies if the user switches from one weapon to another <0.5s after holstering\nthis weapon." }
+    { "HOLSTER_CHANGE", "Note: The holster attribute is now independent of how long this weapon was equipped.\nIt now also applies if the user switches from one weapon to another <0.5s after holstering\nthis weapon." },
+    { "UNDERGOING_CHANGES", "Note: this weapon is still undergoing changes."}
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -186,6 +208,7 @@ float clamp(float val, float minVal, float maxVal)
 //////////////////////////////////////////////////////////////////////////////
 
 #include "methodmaps/Pointer.sp"
+#include "methodmaps/CustomWeapon.sp"
 #include "methodmaps/mathlib/Vector.sp"
 #include "methodmaps/tier1/CUtlMemory.sp"
 #include "methodmaps/tier1/CUtlVector.sp"
@@ -202,6 +225,8 @@ float clamp(float val, float minVal, float maxVal)
 #include "methodmaps/shared/CTFRadiusDamageInfo.sp"
 #include "methodmaps/shared/CTFGameRules.sp"
 #include "methodmaps/shared/healers_t.sp"
+#include "methodmaps/shared/CTFWeaponBaseGrenadeProj.sp"
+#include "methodmaps/shared/CTFGrenadePipebombProjectile.sp"
 
 static CTFGameRules g_pGameRules;
 
@@ -271,6 +296,7 @@ public void OnPluginStart()
     HookEvent("player_hurt", ClientHurt, EventHookMode_Pre);
 
     RegConsoleCmd("loadout", ShowLoadout);
+    RegConsoleCmd("equip", ShowEquip);
 
     // Configs.
     GameData config = LoadGameConfigFile(PLUGIN_NAME);
@@ -281,13 +307,16 @@ public void OnPluginStart()
 
     // DHooks.
     DHooks_CBaseEntity_Deflected = DHookCreateFromConf(config, "CBaseEntity::Deflected");
+    DHooks_CBaseEntity_VPhysicsCollision = DHookCreateFromConf(config, "CBaseEntity::VPhysicsCollision");
     DHooks_CObjectDispenser_DispenseAmmo = DHookCreateFromConf(config, "CObjectDispenser::DispenseAmmo");
     DHooks_CTFSword_GetSwordSpeedMod = DHookCreateFromConf(config, "CTFSword::GetSwordSpeedMod");
     DHooks_CTFProjectile_Jar_Explode = DHookCreateFromConf(config, "CTFProjectile_Jar::Explode");
 
     DHooks_CTFWeaponBase_Deploy = DHookCreateFromConf(config, "CTFWeaponBase::Deploy");
+    DHooks_CTFWeaponBase_ReloadSingly = DHookCreateFromConf(config, "CTFWeaponBase::ReloadSingly");
     DHooks_CTFWeaponBaseGun_GetWeaponSpread = DHookCreateFromConf(config, "CTFWeaponBaseGun::GetWeaponSpread");
     DHooks_CTFFlareGun_Revenge_ExtinguishPlayerInternal = DHookCreateFromConf(config, "CTFFlareGun_Revenge::ExtinguishPlayerInternal");
+    DHooks_CTFLunchBox_ApplyBiteEffects = DHookCreateFromConf(config, "CTFLunchBox::ApplyBiteEffects");
     DHooks_CBaseObject_OnTakeDamage = DHookCreateFromConf(config, "CBaseObject::OnTakeDamage");
     DHooks_CTFPlayer_OnTakeDamage = DHookCreateFromConf(config, "CTFPlayer::OnTakeDamage");
     DHooks_CTFPlayer_OnTakeDamage_Alive = DHookCreateFromConf(config, "CTFPlayer::OnTakeDamage_Alive");
@@ -298,8 +327,10 @@ public void OnPluginStart()
     DHooks_CTFGameRules_FlPlayerFallDamage = DHookCreateFromConf(config, "CTFGameRules::FlPlayerFallDamage");
 
     DHookEnableDetour(DHooks_CTFWeaponBase_Deploy, false, Deploy);
+    DHookEnableDetour(DHooks_CTFWeaponBase_ReloadSingly, false, ReloadSingly);
     DHookEnableDetour(DHooks_CTFWeaponBaseGun_GetWeaponSpread, true, GetWeaponSpread); // for some reason this has to be post in order to work properly.
     DHookEnableDetour(DHooks_CTFFlareGun_Revenge_ExtinguishPlayerInternal, false, ExtinguishPlayerInternal);
+    DHookEnableDetour(DHooks_CTFLunchBox_ApplyBiteEffects, false, ApplyBiteEffects);
     DHookEnableDetour(DHooks_CBaseObject_OnTakeDamage, false, CBaseObject_OnTakeDamage);
     DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage, false, CTFPlayer_OnTakeDamage);
     DHookEnableDetour(DHooks_CTFPlayer_OnTakeDamage, true, OnTakeDamagePost);
@@ -317,10 +348,34 @@ public void OnPluginStart()
     PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
     SDKCall_CBaseCombatWeapon_GetName = EndPrepSDKCall();
     StartPrepSDKCall(SDKCall_Entity);
+    PrepSDKCall_SetFromConf(config, SDKConf_Virtual, "CBaseCombatWeapon::GetSlot");
+    PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+    SDKCall_CBaseCombatWeapon_GetSlot = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Entity);
     PrepSDKCall_SetFromConf(config, SDKConf_Virtual, "CTFWeaponBase::GetMaxClip1");
     PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
     SDKCall_CTFWeaponBase_GetMaxClip1 = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Entity);
+    PrepSDKCall_SetFromConf(config, SDKConf_Virtual, "CTFWeaponBaseGrenadeProj::Detonate");
+    SDKCall_CTFWeaponBaseGrenadeProj_Detonate = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Entity);
+    PrepSDKCall_SetFromConf(config, SDKConf_Virtual, "CTFGrenadePipebombProjectile::GetDamageType");
+    PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+    SDKCall_CTFGrenadePipebombProjectile_GetDamageType = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Player);
+    PrepSDKCall_SetFromConf(config, SDKConf_Virtual, "CTFPlayer::EquipWearable");
+    PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+    SDKCall_CTFPlayer_EquipWearable = EndPrepSDKCall();
 
+    StartPrepSDKCall(SDKCall_Static);
+    PrepSDKCall_SetFromConf(config, SDKConf_Signature, "GEconItemSchema");
+    PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+    SDKCall_GEconItemSchema = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Raw);
+    PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CEconItemSchema::GetItemDefinition");
+    PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+    PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+    SDKCall_CEconItemSchema_GetItemDefinition = EndPrepSDKCall();
     StartPrepSDKCall(SDKCall_Entity);
     PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CBaseCombatWeapon::Deploy");
     PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_Plain);
@@ -373,6 +428,8 @@ public void OnPluginStart()
     CTFWeaponBase_m_pWeaponInfo = view_as<Address>(GameConfGetOffset(config, "CTFWeaponBase::m_pWeaponInfo"));
     CTFWeaponBase_m_iWeaponMode = view_as<Address>(GameConfGetOffset(config, "CTFWeaponBase::m_iWeaponMode"));
     CTFWeaponInfo_m_WeaponData = view_as<Address>(GameConfGetOffset(config, "CTFWeaponInfo_m_WeaponData"));
+    CTFGrenadePipebombProjectile_m_bWallShatter = view_as<Address>(GameConfGetOffset(config, "CTFGrenadePipebombProjectile::m_bWallShatter"));
+    CTFPlayer_m_hMyWearables = view_as<Address>(GameConfGetOffset(config, "CTFPlayer::m_hMyWearables"));
 
     // Memory patches.
     energyRingSpeedAddress = GameConfGetAddress(config, "CreateEnergyRing") + view_as<Address>(GameConfGetOffset(config, "Memory_CreateEnergyRingVelocity"));
@@ -381,6 +438,9 @@ public void OnPluginStart()
     shortstopPushbackAddress = GameConfGetAddress(config, "ShortstopShove") + view_as<Address>(GameConfGetOffset(config, "Memory_ShortstopPushbackValue"));
     oldShortstopPushback = Dereference(shortstopPushbackAddress);
     WriteToValue(shortstopPushbackAddress, AddressOf(newShortstopPushback));
+    steakSpeedCapMultiplierAddress = GameConfGetAddress(config, "CalculateMaxSpeed") + view_as<Address>(GameConfGetOffset(config, "Memory_SteakSpeedCapMultiplier"));
+    oldSteakSpeedCapMultiplier = Dereference(steakSpeedCapMultiplierAddress);
+    WriteToValue(steakSpeedCapMultiplierAddress, AddressOf(newSteakSpeedCapMultiplier));
 
     delete config;
 
@@ -414,7 +474,73 @@ public void OnPluginStart()
             CBaseEntity(i);
     }
 
-    PrintToServer("--------------------------------------------------------\n\"%s\" has loaded.\n--------------------------------------------------------", PLUGIN_NAME);
+    // Create the file name for the weapon changes list.
+    if (configList[0] == '\0')
+        Format(configList, PLATFORM_MAX_PATH, "addons/sourcemod/configs/%s - Weapons.txt", PLUGIN_NAME);
+    if (!FileExists(configList, true))
+        ThrowError("%s does not exist in your /tf/ directory!", configList);
+
+    // Create the file name for the custom weapons list.
+    char customList[PLATFORM_MAX_PATH];
+    Format(customList, PLATFORM_MAX_PATH, "addons/sourcemod/configs/%s - CustomWeapons.txt", PLUGIN_NAME);
+    if (!FileExists(customList, true))
+        ThrowError("%s does not exist in your /tf/ directory!", customList);
+
+    // Set up custom weapon definitions.
+    KeyValues pair = new KeyValues("CustomWeapons");
+    pair.ImportFromFile(customList);
+    pair.GotoFirstSubKey();
+
+    PrintToServer("--------------------------------------------------------");
+
+    char section[256];
+    char key[256];
+    char value[256];
+    do
+    {
+        pair.GetSectionName(section, sizeof(section));
+        CustomWeapon definition = CustomWeapon();
+        definition.ItemDefinitionIndex = StringToInt(section);
+
+        if (pair.GotoFirstSubKey(false))
+        {
+            do
+            {
+                pair.GetSectionName(key, sizeof(key));
+                pair.GetString(NULL_STRING, value, sizeof(value));
+                
+                if (StrEqual(key, "object"))
+                    definition.SetObject(value);
+                else if (StrEqual(key, "name"))
+                    definition.SetName(value);
+                else if (StrEqual(key, "class"))
+                {
+                    char classes[9][256];
+                    ExplodeString(value, " ", classes, sizeof(classes), sizeof(classes[]));
+                    for (int i = 0; i < sizeof(classes); ++i)
+                    {
+                        int class = StringToInt(classes[i]);
+                        PrintToServer("itemdefinitionindex: %i, class: %i", definition.ItemDefinitionIndex, class);
+                        if (classes[i][0] == '\0' || !class)
+                            break;
+                        definition.ToggleClass(view_as<TFClassType>(class), true);
+                    }
+                }
+                else if (StrEqual(key, "slot"))
+                    definition.Slot = StringToInt(value);
+            } while (pair.GotoNextKey(false));
+            pair.GoBack();
+        }
+
+        char name[256];
+        definition.GetName(name);
+        PrintToServer("Created custon weapon definition for %s.", name);
+    }
+    while (pair.GotoNextKey());
+
+    delete pair;
+
+    PrintToServer("\n\"%s\" has loaded.\n--------------------------------------------------------", PLUGIN_NAME);
 }
 
 public void OnMapStart()
@@ -426,10 +552,25 @@ public void OnPluginEnd()
 {
     WriteToValue(energyRingSpeedAddress, oldEnergyRingSpeed);
     WriteToValue(shortstopPushbackAddress, oldShortstopPushback);
+    WriteToValue(steakSpeedCapMultiplierAddress, oldSteakSpeedCapMultiplier);
     tf_parachute_aircontrol.RestoreDefault();
     tf_rocketpack_airborne_launch_absvelocity_preserved.RestoreDefault();
     tf_rocketpack_launch_absvelocity_preserved.RestoreDefault();
     tf_rocketpack_launch_push.RestoreDefault();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// GLOBAL TF2 FUNCTIONS                                                     //
+//////////////////////////////////////////////////////////////////////////////
+
+Address GEconItemSchema()
+{
+    return SDKCall(SDKCall_GEconItemSchema);
+}
+
+Address GetItemDefinition(int index)
+{
+    return SDKCall(SDKCall_CEconItemSchema_GetItemDefinition, GEconItemSchema(), index);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -457,6 +598,44 @@ Action ShowLoadout(int clientIndex, int args)
         PrintToChat(player.Index, "Your loadout is the same as stock TF2.");
     return Plugin_Handled;
 }
+
+Action ShowEquip(int clientIndex, int args)
+{
+    CTFPlayer player = view_as<CTFPlayer>(clientIndex);
+    player.EquipMenuSlotChosen = -1;
+    player.CreateEquipMenu();
+    return Plugin_Handled;
+}
+
+int ShowEquipMenuAction(Menu menu, MenuAction action, int param1, int param2)
+{
+    CTFPlayer player = view_as<CTFPlayer>(param1);
+    if (action == MenuAction_End)
+        delete menu;
+    else if (action == MenuAction_Select)
+    {
+        if (player.EquipMenuSlotChosen == -1)
+        {
+            player.EquipMenuSlotChosen = param2;
+            player.CreateEquipMenu();
+        }
+        else
+        {
+            char info[256];
+            menu.GetItem(param2, info, sizeof(info));
+            CustomWeapon definition = view_as<CustomWeapon>(StringToInt(info));
+            if (!definition.AllowedOnClass(player.Class)/*definition.Class != player.Class*/ && definition != NULL_CUSTOM_WEAPON) // Prevent class changing exploits.
+                PrintToChat(player.Index, "Yeah nice try.");
+            else
+            {
+                player.SetCustomWeapon(player.EquipMenuSlotChosen, definition);
+                PrintToChat(player.Index, "Make sure to touch the resupply locker!");
+            }
+        }
+    }
+    return 0;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // EVENTS                                                                   //
 //////////////////////////////////////////////////////////////////////////////
@@ -467,6 +646,12 @@ public Action PostClientInventoryReset(Event event, const char[] name, bool dont
     client.TimeUntilSandmanStunEnd = 0.00;
     client.TimeSinceStoppedBurning = 0.00;
     client.FromSVF = view_as<CTFWeaponBase>(INVALID_ENTITY);
+
+    // Custom weapons.
+    client.StructuriseWeaponList();
+    client.ApplyCustomWeapons();
+
+    // Final structurise.
     client.StructuriseWeaponList();
     client.Regenerate();
     return Plugin_Continue;
@@ -484,7 +669,7 @@ public Action ClientDied(Event event, const char[] name, bool dontBroadcast)
     CTFPlayer victim = view_as<CTFPlayer>(GetClientOfUserId(event.GetInt("userid")));
 
     // If the victim is dead and has been marked as volcano by the Sharpened Volcano Fragment, make an explosion that can cause a chain reaction.
-    // The explosion is only created next frame because any form of damaging players inside these damage hooks will cause the server to crash.
+    // The explosion is created next frame because this will kill the player who just "died" over and over again.
     if (victim.FromSVF.Exists)
     {
         DataPack data = new DataPack();
@@ -492,19 +677,6 @@ public Action ClientDied(Event event, const char[] name, bool dontBroadcast)
         data.WriteCell(victim);
         data.WriteCell(victim.FromSVF);
         RequestFrame(VolcanoExplosion, data);
-
-        /*
-        CTakeDamageInfo newInfo = CTakeDamageInfo(victim.FromSVF.Owner, victim.FromSVF.Owner, victim.FromSVF, victim.GetAbsOrigin(), victim.GetAbsOrigin(), 30.00, DMG_BLAST | DMG_IGNITE | DMG_HALF_FALLOFF, TF_CUSTOM_BURNING, victim.GetAbsOrigin());
-        CTFRadiusDamageInfo radiusInfo = CTFRadiusDamageInfo(newInfo, victim.GetAbsOrigin(), 146.00);
-        g_pGameRules.RadiusDamage(radiusInfo);
-        newInfo.Dispose();
-        radiusInfo.Dispose();
-
-        float buffer[3];
-        victim.GetAbsOrigin().GetBuffer(buffer);
-        TE_SetupExplosion(buffer, explosionModelIndex, 10.0, 1, 0, 146, 0);
-        TE_SendToAll();
-        */
     }
 
     return Plugin_Continue;
@@ -554,7 +726,7 @@ void VolcanoExplosion(DataPack data)
     CTFWeaponBase weapon = data.ReadCell();
 
     CTakeDamageInfo newInfo = CTakeDamageInfo(attacker, attacker, weapon, victim.GetAbsOrigin(), victim.GetAbsOrigin(), 30.00, DMG_BLAST | DMG_IGNITE | DMG_HALF_FALLOFF, TF_CUSTOM_BURNING, victim.GetAbsOrigin());
-    CTFRadiusDamageInfo radiusInfo = CTFRadiusDamageInfo(newInfo, victim.GetAbsOrigin(), 146.00);
+    CTFRadiusDamageInfo radiusInfo = CTFRadiusDamageInfo(newInfo, victim.GetAbsOrigin(), 200.00);
     g_pGameRules.RadiusDamage(radiusInfo);
     newInfo.Dispose();
     radiusInfo.Dispose();
@@ -662,6 +834,10 @@ public void OnGameFrame()
             // Return the flame density back to normal after 0.25s has passed since the user has last been flamed, in 1.5s, with the flamethrowers.
             if (GetGameTime() - player.TimeSinceHitByFlames > 0.25)
                 player.FlameDensity -= 0.50 * (TICK_RATE_PRECISION / 1.50);
+
+            // Checks for pounce attacks.
+            if (player.GetMemberVector(Prop_Data, "m_vecVelocity").Z <= (player.GetFlags() & FL_DUCKING ? -360.00 : -300.00))
+                player.TimeUntilNoPounceCrits = GetGameTime() + 0.5;
         }
     }
 
@@ -732,15 +908,18 @@ void ClientEquippedWeapon(int index, int weapon)
         client.StructuriseWeaponList();
 }
 
-// i literally have to use this just because fall damage isn't accounted for in my ontakedamage dhook...
-Action ClientTookFallDamage(int victimIndex, int &attackerIndex, int &inflictor, float &damage, int &damagetype, int &weaponIndex, float damageForce[3], float damagePosition[3], int damagecustom)
+// for code that doesn't work in the ontakedamage dhook.
+Action ClientOnTakeDamage(int victimIndex, int &attackerIndex, int &inflictor, float &damage, int &damagetype, int &weaponIndex, float damageForce[3], float damagePosition[3], int damagecustom)
 {
     CTFPlayer victim = view_as<CTFPlayer>(victimIndex);
-    if (victim.GetWeapon(444) != INVALID_ENTITY && damagetype & DMG_FALL) // 50% fall damage reduction with the Mantreads.
+
+     // 50% fall damage reduction with the Mantreads.
+    if (victim.GetWeapon(444) != INVALID_ENTITY && damagetype & DMG_FALL)
     {
         damage *= 0.50;
         return Plugin_Changed;
     }
+
     return Plugin_Continue;
 }
 
@@ -754,6 +933,22 @@ MRESReturn Deflected(int entity, DHookReturn returnValue, DHookParam parameters)
     projectile.SpawnPosition.Dispose();
     projectile.SpawnPosition = projectile.GetAbsOrigin(.global = false);
     return MRES_Ignored;
+}
+
+MRESReturn VPhysicsCollision(int entity, DHookParam parameters)
+{
+    CTFGrenadePipebombProjectile self = view_as<CTFGrenadePipebombProjectile>(entity);
+    if (self.ClassEquals("tf_projectile_pipe")) // Loch-n-Load pipe management.
+    {
+        CTFWeaponBase weapon = ToTFWeaponBase(self.GetMemberEntity(Prop_Send, "m_hLauncher"));
+        if (weapon.ItemDefinitionIndex == 308)
+        {
+            if (weapon.Owner.GetAbsOrigin().DistTo(self.GetAbsOrigin()) > 100.00 && GetGameTime() - self.Timestamp > 0.1) // Go with normal fizzling.
+                self.m_bWallShatter = true;
+            else // Explode if the pipe just spawned.
+                self.Detonate();
+        }
+    }
 }
 
 MRESReturn DispenseAmmo(int entity, DHookReturn returnValue, DHookParam parameters)
@@ -857,6 +1052,26 @@ MRESReturn Deploy(int index, DHookReturn returnValue)
     return MRES_Ignored;
 }
 
+MRESReturn ReloadSingly(int index, DHookReturn returnValue)
+{   
+    CTFWeaponBase weapon = view_as<CTFWeaponBase>(index);
+    CTFPlayer owner = ToTFPlayer(weapon.Owner);
+    if (owner != INVALID_ENTITY && weapon.ItemDefinitionIndex == 308 && weapon.GetMember(Prop_Send, "m_iReloadMode") == TF_RELOADING_CONTINUE) // Reload entire clip with the Loch-n-Load.
+    {
+        int maxClip = weapon.GetMaxClip1();
+        int newClip = maxClip;
+        int currentAmmo = owner.GetAmmoCount();
+        if (currentAmmo < maxClip)
+            newClip = currentAmmo;
+        weapon.SetMember(Prop_Send, "m_iClip1", newClip);
+        weapon.SetMember(Prop_Send, "m_iReloadMode", TF_RELOAD_FINISH);
+        owner.SetAmmoCount(currentAmmo - newClip);
+        returnValue.Value = true;
+        return MRES_Supercede;
+    }
+    return MRES_Ignored;
+}
+
 MRESReturn GetWeaponSpread(int index, DHookReturn returnValue)
 {
     CTFWeaponBase entity = view_as<CTFWeaponBase>(index);
@@ -952,6 +1167,13 @@ MRESReturn Explode(int index, DHookReturn returnValue, DHookParam parameters)
     return MRES_Ignored;
 }
 
+MRESReturn ApplyBiteEffects(int entity, DHookParam parameters)
+{
+    CTFWeaponBase weapon = view_as<CTFWeaponBase>(entity);
+    if (weapon.ItemDefinitionIndex == 311)
+        ToTFPlayer(weapon.Owner).AddCustomAttribute("airblast vulnerability multiplier", 0.50, 16.00);
+}
+
 MRESReturn CBaseObject_OnTakeDamage(int entity, DHookReturn returnValue, DHookParam parameters)
 {
     CTakeDamageInfo info = CTakeDamageInfo.FromAddress(parameters.Get(1));
@@ -973,7 +1195,15 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
     CTFPlayer attacker = view_as<CTFPlayer>(info.m_hAttacker);
     if (!attacker.IsPlayer)
         return MRES_Ignored;
+    victim.TakingMiniCritDamage = false;
 
+    // Give a 50% damage bonus with the Flying Guillotine on stunned targets.
+    if ((info.m_hWeapon.ItemDefinitionIndex == 812 || info.m_hWeapon.ItemDefinitionIndex == 833) && victim.Stunned)
+        info.m_flDamage *= 1.50;
+
+    // Deal a solid 72 self-damage with the Loch-n-Load.
+    if (info.m_hWeapon.ItemDefinitionIndex == 308 && victim == attacker)
+        info.m_flDamage = 72.00;
 
     // Re-work the flame density system with Pyro's flamethrower.
     if (info.m_bitsDamageType & DMG_IGNITE && info.m_hWeapon != INVALID_ENTITY && info.m_hWeapon.ClassEquals("tf_weapon_flamethrower"))
@@ -1008,10 +1238,6 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
     if (info.m_hWeapon.ItemDefinitionIndex == 773)
         attacker.Heal(RoundToCeil(RemapValClamped(attacker.GetAbsOrigin().DistTo(victim.GetAbsOrigin()), 0.00, 512.00, 4.00, 2.00)));
 
-    // Give a 50% damage bonus with the Flying Guillotine on stunned targets.
-    if ((info.m_hWeapon.ItemDefinitionIndex == 812 || info.m_hWeapon.ItemDefinitionIndex == 833) && victim.Stunned)
-        info.m_flDamage *= 1.50;
-
     // Ignition checks.
     if (info.m_bitsDamageType & DMG_IGNITE)
     {
@@ -1020,21 +1246,27 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
             victim.OriginalBurner = attacker;
     }
 
-    // Force the damage number with a stun ball from the sandman to be 15, 30 with a moonshot. On moonshots fully stun the victim as well.
+    // Force the damage number with a stun ball from the sandman to be 15, 30 with a moonshot.
     // Also I'm gonna deal with stunning differently, because the current stun mechanic is quite bad.
+    // Stunning will only occur if the ball is at least 1/4s old.
     if (info.m_iDamageCustom == TF_CUSTOM_BASEBALL && info.m_hWeapon.ItemDefinitionIndex == 44)
     {
-        float timeExisted = min(GetGameTime() - victim.LastProjectileEncountered.Timestamp, FLIGHT_TIME_TO_MAX_STUN);
-        float duration = timeExisted / FLIGHT_TIME_TO_MAX_SLOWDOWN_RAMPUP * tf_scout_stunball_base_duration.FloatValue;
-        info.m_flDamage = 15.00;
-        victim.TimeUntilSandmanStunEnd = GetGameTime() + duration;
+        pl_impact_stun_range_mutes = 0;
         victim.m_Shared.RemoveCond(TFCond_Dazed);
-        if (timeExisted == FLIGHT_TIME_TO_MAX_STUN)
+        float timeExisted = min(GetGameTime() - victim.LastProjectileEncountered.Timestamp, FLIGHT_TIME_TO_MAX_STUN);
+        if (timeExisted >= 0.25)
         {
-            duration += 1.0; // 7 seconds in total.
-            info.m_flDamage = 30.00;
-            victim.m_Shared.StunPlayer(duration, 0.5, TF_STUN_CONTROLS | TF_STUN_SPECIAL_SOUND, attacker);
+            float duration = timeExisted / FLIGHT_TIME_TO_MAX_STUN * tf_scout_stunball_base_duration.FloatValue;
+            info.m_flDamage = 15.00;
+            if (timeExisted == FLIGHT_TIME_TO_MAX_STUN)
+            {
+                duration += 1.0; // 7 seconds in total.
+                info.m_flDamage = 30.00;
+            }
+            victim.TimeUntilSandmanStunEnd = GetGameTime() + duration;
         }
+        else
+            pl_impact_stun_range_mutes = 2;
     }
 
     // Deal crits on burning players with the Sun-on-a-Stick.
@@ -1092,8 +1324,21 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
         info.SetCritType(victim, CRIT_MINI);
 
     // Sharpened Volcano Fragment checks.
-    if (info.m_hWeapon.ItemDefinitionIndex == 348 && (info.m_hAttacker.GetTeam() != victim.GetTeam() || info.m_hAttacker == victim))
+    if (info.m_hWeapon.ItemDefinitionIndex == 348/* && (info.m_hAttacker.GetTeam() != victim.GetTeam() || info.m_hAttacker == victim)*/)
         victim.FromSVF = info.m_hWeapon;
+
+    // Deal crit damage on pounce attacks with the Warrior's Spirit.
+    if (info.m_hWeapon.ItemDefinitionIndex == 310 && attacker.TimeUntilNoPounceCrits > GetGameTime())
+        info.SetCritType(victim, CRIT_FULL);
+
+    // 20% damage resistance instead of 20% damage vulnerability when using the Buffalo Steak Sandvich.
+    // please get a better way around this. i'll probably do like memory patching or something when i actually find where the code is for this
+    if (victim.m_Shared.InCond(TFCond_RestrictToMelee) && victim.m_Shared.InCond(TFCond_CritCola))
+        info.m_flDamage = info.m_flDamage / 1.20 * 0.80;
+
+    // Deal melee crit damage as Demoman if jumping with the Loch-n-Load.
+    //if (attacker.m_Shared.InCond(TFCond_BlastJumping) && attacker.GetWeapon(308) != INVALID_ENTITY && info.m_hWeapon == attacker.GetWeaponFromSlot(TFWeaponSlot_Melee))
+    //    info.SetCritType(victim, CRIT_FULL);
 
     // Attribute hooks.
     if (info.m_hWeapon != INVALID_ENTITY)
@@ -1231,14 +1476,25 @@ MRESReturn OnTakeDamageAlivePost(int entity, DHookReturn returnValue, DHookParam
 MRESReturn TeamFortress_CalculateMaxSpeed(int entity, DHookReturn returnValue, DHookParam parameters)
 {
     CTFPlayer victim = view_as<CTFPlayer>(entity);
+    MRESReturn returnType = MRES_Ignored;
     
     // Decrease the player's speed by half if they are stunned by the Sandman.
     if (victim.TimeUntilSandmanStunEnd > GetGameTime())
     {
         returnValue.Value = view_as<float>(returnValue.Value) / 2;
-        return MRES_Override;
+        returnType = MRES_Override;
     }
-    return MRES_Ignored;
+
+    // Remove the charge speed nerf with the Scotsman's Skullcutter.
+    CEconEntity weapon = victim.GetWeapon(172);
+    if (weapon != INVALID_ENTITY && weapon == victim.GetActiveWeapon() && victim.m_Shared.InCond(TFCond_Charging))
+    {
+        float modifier = 1.00;
+        weapon.HookValueFloat(modifier, "mult_player_movespeed");
+        returnValue.Value = view_as<float>(returnValue.Value) / modifier;
+        returnType = MRES_Override;
+    }
+    return returnType;
 }
 
 MRESReturn AddCond(Address thisPointer, DHookParam parameters)
@@ -1246,9 +1502,6 @@ MRESReturn AddCond(Address thisPointer, DHookParam parameters)
     CTFPlayerShared shared = view_as<CTFPlayerShared>(thisPointer);
     CTFPlayer client = ToTFPlayer(shared.m_pOuter);
     TFCond condition = parameters.Get(1);
-    /*
-    float duration = parameters.Get(2);
-    */
     if (condition == TFCond_Gas)
         client.FromGasPasser = true;
     else if (condition == TFCond_Dazed && client.TimeSinceLastProjectileEncounter == -1.00) // Remove stunlock from Scorch Shot.
@@ -1329,20 +1582,114 @@ public Action SoundPlayed(int clients[MAXPLAYERS], int &numClients, char sample[
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// MEMORY                                                                   //
+// FROM NOSOOP'S STOCKSOUP REPOSITORY                                       //
 //////////////////////////////////////////////////////////////////////////////
 
-int LoadEntityHandleFromAddress(Address addr) // From nosoop's stocksoup framework.
+stock bool TF2_TranslateWeaponEntForClass(TFClassType playerClass, char[] className,
+		int maxlen) {
+	if (StrEqual(className, "tf_weapon_shotgun")) {
+		switch (playerClass) {
+			case TFClass_Soldier: {
+				strcopy(className, maxlen, "tf_weapon_shotgun_soldier");
+			}
+			case TFClass_Pyro: {
+				strcopy(className, maxlen, "tf_weapon_shotgun_pyro");
+			}
+			case TFClass_Heavy: {
+				strcopy(className, maxlen, "tf_weapon_shotgun_hwg");
+			}
+			case TFClass_Engineer: {
+				strcopy(className, maxlen, "tf_weapon_shotgun_primary");
+			}
+			default: {
+				strcopy(className, maxlen, "tf_weapon_shotgun_primary");
+			}
+		}
+		return true;
+	} else if (StrEqual(className, "tf_weapon_pistol")) {
+		switch (playerClass) {
+			case TFClass_Scout: {
+				strcopy(className, maxlen, "tf_weapon_pistol_scout");
+				return true;
+			}
+			case TFClass_Engineer: {
+				strcopy(className, maxlen, "tf_weapon_pistol");
+			}
+			default: {
+				strcopy(className, maxlen, "tf_weapon_pistol");
+			}
+		}
+	} else if (StrEqual(className, "tf_weapon_shovel")
+			|| StrEqual(className, "tf_weapon_bottle")) {
+		switch (playerClass) {
+			case TFClass_Soldier: {
+				strcopy(className, maxlen, "tf_weapon_shovel");
+				return true;
+			}
+			case TFClass_DemoMan: {
+				strcopy(className, maxlen, "tf_weapon_bottle");
+				return true;
+			}
+		}
+		return false;
+		
+	} else if (StrEqual(className, "saxxy")) {
+		static char SAXXY_CLASSES[][] = {
+			"saxxy", "tf_weapon_bat", "tf_weapon_club", "tf_weapon_shovel", "tf_weapon_bottle", 
+			"tf_weapon_bonesaw", "tf_weapon_fists", "tf_weapon_fireaxe", "tf_weapon_knife",
+			"tf_weapon_wrench"
+		};
+		
+		if (playerClass) {
+			strcopy(className, maxlen, SAXXY_CLASSES[view_as<int>(playerClass)]);
+			return true;
+		}
+		
+	} else if (StrEqual(className, "tf_weapon_throwable")) {
+		switch (playerClass) {
+			case TFClass_Medic: {
+				strcopy(className, maxlen, "tf_weapon_throwable_primary");
+			}
+			default: {
+				strcopy(className, maxlen, "tf_weapon_throwable_secondary");
+			}
+		}
+		return true;
+		
+	} else if (StrEqual(className, "tf_weapon_parachute")) {
+		switch (playerClass) {
+			case TFClass_Soldier: {
+				strcopy(className, maxlen, "tf_weapon_parachute_secondary");
+				return true;
+			}
+			case TFClass_DemoMan: {
+				strcopy(className, maxlen, "tf_weapon_parachute_primary");
+				return true;
+			}
+		}
+		return false;
+	} else if (StrEqual(className, "tf_weapon_revolver")) {
+		switch (playerClass) {
+			case TFClass_Engineer: {
+				strcopy(className, maxlen, "tf_weapon_revolver_secondary");
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+int LoadEntityHandleFromAddress(Address addr)
 {
     return EntRefToEntIndex(LoadFromAddress(addr, NumberType_Int32) | (1 << 31));
 }
 
-void StoreEntityHandleToAddress(Address addr, int entity) // From nosoop's stocksoup framework.
+void StoreEntityHandleToAddress(Address addr, int entity)
 {
 	StoreToAddress(addr, IsValidEntity(entity)? EntIndexToEntRef(entity) & ~(1 << 31) : 0, NumberType_Int32);
 }
 
-int GetEntityFromAddress(Address pEntity) // From nosoop's stocksoup framework.
+int GetEntityFromAddress(Address pEntity)
 {
     static int offs_RefEHandle;
     if (offs_RefEHandle) 
@@ -1373,6 +1720,10 @@ int GetEntityFromAddress(Address pEntity) // From nosoop's stocksoup framework.
     offs_RefEHandle = offs_angRotation + 0x0C;
     return GetEntityFromAddress(pEntity);
 }
+
+//////////////////////////////////////////////////////////////////////////////
+// MEMORY                                                                   //
+//////////////////////////////////////////////////////////////////////////////
 
 any Dereference(Address address, NumberType bitdepth = NumberType_Int32)
 {

@@ -60,7 +60,7 @@ methodmap CBaseEntity
     {
         return view_as<CBaseEntity>(GetEntPropEnt(this.Index, type, buffer, offset));
     }
-    public Vector GetMemberVector(PropType type, char[] buffer, int offset = 0, bool global = false)
+    public Vector GetMemberVector(PropType type, char[] buffer, int offset = 0, bool global = true)
     {
         float vector[3];
         GetEntPropVector(this.Index, type, buffer, vector, offset);
@@ -73,6 +73,10 @@ methodmap CBaseEntity
     public void SetMemberFloat(PropType type, char[] buffer, float value, int offset = 0)
     {
         SetEntPropFloat(this.Index, type, buffer, value, offset);
+    }
+    public void SetMemberEntity(PropType type, char[] buffer, CBaseEntity value, int offset = 0)
+    {
+        SetEntPropEnt(this.Index, type, buffer, value.Index, offset);
     }
     public void SetMemberVector(PropType type, char[] buffer, Vector value, int offset = 0)
     {
@@ -167,8 +171,8 @@ methodmap CBaseEntity
         Vector absOrigin = this.GetMemberVector(Prop_Data, "m_vecAbsOrigin", .global = global);
         if (center && this.HasMember(Prop_Send, "m_vecMins"))
         {
-            Vector mins = this.GetMemberVector(Prop_Send, "m_vecMins", .global = true);
-            Vector maxs = this.GetMemberVector(Prop_Send, "m_vecMaxs", .global = true);
+            Vector mins = this.GetMemberVector(Prop_Send, "m_vecMins");
+            Vector maxs = this.GetMemberVector(Prop_Send, "m_vecMaxs");
             absOrigin.Assign(absOrigin + (mins + maxs * 0.5));
         }
         return absOrigin;
@@ -199,6 +203,10 @@ methodmap CBaseEntity
     {
         return SDKCall(SDKCall_CBaseEntity_TakeDamage, this.Index, info);
     }
+    public void Dispatch()
+    {
+        DispatchSpawn(this.Index);
+    }
 
     // CBaseEntity members.
     property bool IsPlayer
@@ -212,16 +220,6 @@ methodmap CBaseEntity
     property bool IsBaseCombatWeapon
     {
         public get() { return this.ClassContains("tf_weapon") != -1;}
-    }
-
-    // Statics.
-    public static CBaseEntity Dereference(Address address)
-    {
-        return view_as<CBaseEntity>(GetEntityFromAddress(Dereference(address)));
-    }
-    public static CBaseEntity GetFromHandle(Address address)
-    {
-        return view_as<CBaseEntity>(LoadEntityHandleFromAddress(address));
     }
 
     // Constructor.
@@ -249,7 +247,22 @@ methodmap CBaseEntity
             DHookEntity(DHooks_CBaseEntity_Deflected, false, index, _, Deflected);
         else if (StrEqual(cbaseentities[index].class, "tf_weapon_sword"))
             DHookEntity(DHooks_CTFSword_GetSwordSpeedMod, false, index, _, GetSwordSpeedMod);
+        DHookEntity(DHooks_CBaseEntity_VPhysicsCollision, false, index, _, VPhysicsCollision);
 
         return entity;
+    }
+
+    // Statics.
+    public static CBaseEntity Dereference(Address address)
+    {
+        return view_as<CBaseEntity>(GetEntityFromAddress(Dereference(address)));
+    }
+    public static CBaseEntity GetFromHandle(Address address)
+    {
+        return view_as<CBaseEntity>(LoadEntityHandleFromAddress(address));
+    }
+    public static any Create(const char[] name)
+    {
+        return CBaseEntity(CreateEntityByName(name));
     }
 }

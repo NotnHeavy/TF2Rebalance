@@ -2,10 +2,15 @@
 "WeaponChanges"
 {
     // Heavy changes. This is a very cheeky trick but it works.
+    "tf_wearable_demoshield"
+    {
+        "name"   "SHIELD"
+        "change" "elo"
+    }
     "tf_weapon_minigun"
     {
         "name"   "Heavy Weapons Guy"
-        "change" "Deals 3x falling damage to the player you land on"
+        "change" "+ Deals 3x falling damage to the player you land on"
     }
 
     // Scout primaries.
@@ -14,7 +19,7 @@
         "name"   "Shortstop"
         "change" "+ 35% slower reload instead of 50% slower reload."
         "change" "+ 20% health bonus from health packs while equipped."
-        "change" "+ Increased the shove force multiplier from 400 to 1200. I.E. it is 150% stronger now."
+        "change" "+ Increased the shove force multiplier from 400 to 1200. I.E. it is 200% stronger now."
     }
     "772"
     {
@@ -46,12 +51,11 @@
     "44"
     {
         "name"   "Sandman"
-        "change" "+ On moonshots (when the stun ball hits 1s after launch), players are now fully
-stunned for 7s, with 0 control."
-        "change" "+ The stun ball deals 100% more damage on moonshots."
-        "change" "+ Outside moonshots, stunned targets move 50% as fast as they usually would. 
-They cannot strafe out of this."
+        "change" "+ The stun ball deals 100% more damage on moonshots (>=0.8s after launch)."
+        "change" "+ Stunned targets move 50% as fast as they usually would. They cannot strafe 
+out of this."
         "change" "- It now takes 15s to recharge instead of 10s."
+        "change" "- The ball must be 1/4s old in order to stun."
     }
     "349"
     {
@@ -61,13 +65,18 @@ They cannot strafe out of this."
         "change" "- 20% slower firing speed."
         "change" "- No random critical hits."
     }
+    "355"
+    {
+        "name"   "Fan O'War"
+        "change" "+ This weapon deploys and holsters 20% faster."
+    }
 
     // Soldier primaries.
     "414"
     {
         "name"   "Liberty Launcher"
         "macro"  "HOLSTER_CHANGE"
-        "change" "+ Deploying is now 20% faster and holstering is now 10% faster."
+        "change" "+ Deploying and holstering is now 20% faster."
         "change" "+ Removed the 25% damage penalty."
         "change" "- 25% radius penalty."
         "change" "- Removed the 25% rocket jump self damage reduction."
@@ -95,6 +104,7 @@ change was made to weaken bombardments."
         "change" "+ Increased the projectile speed by 150%."
         "change" "+/- Removed player penetration in favour of single and high damage (60 base, 150% rampup, 
 50% fallof)."
+        "change" "- Increased the reload speed by 25%."
     }
     "444"
     {
@@ -209,7 +219,13 @@ targets affected."
     "308"
     {
         "name"   "Loch-n-Load"
-        "change" "+ The damage bonus is now universal."
+        "change" "+ Mini-crits targets launched airborne by explosions, grapple hooks or rocket 
+packs."
+        "change" "+ Reloads entire clip at once."
+        "change" "+ Inflicts 100% more knockback on hit targets."
+        "change" "+/- Pipes within a 100 HU range from the attacker now explode upon impact."
+        "change" "- 25% slower reload speed."
+        "change" "- 50% clip size."
     }
     "405 608"
     {
@@ -228,6 +244,12 @@ targets affected."
         "change" "- 80% less max secondary ammo on wearer."
         "change" "- Each head, up to 4, gives 6% more speed instead of 8%."
     }
+    "172"
+    {
+        "name"   "Scotsman's Skullcutter"
+        "change" "+ This weapon no longer affects the charge speed."
+        "change" "+ Deals crits while the wielder is blast jumping."
+    }
     "307"
     {
         "name"   "Ullapool Caber"
@@ -245,14 +267,56 @@ longer weapon switch."
         "change" "+ 15 health restored on kill."
     }
 
+    // Heavy primaries.
+    "41"
+    {
+        "name"   "Natascha"
+        "change" "+ 50 health returned on kill."
+        "change" "- No stun on hit."
+        "change" "- No damage resistances."
+    }
+    "312"
+    {
+        "name"   "Brass Beast"
+        "change" "+ 40% slower move speed while deployed, instead of 60%."
+        "change" "+ 40% slower rev up speed, instead of 50%."
+    }
+
+    // Heavy secondaries.
+    "311"
+    {
+        "name"   "Buffalo Steak Sandvich"
+        "change" "+ 50% airblast resistance when using."
+        "change" "+ 20% damage resistance when using instead of vulnerability."
+        "change" "+ The speed cap is now bumped from 370.50HU/s to 520HU/s. The Eviction Notice
+and Gloves of Running Urgently can now be used with this item."
+    }
+
+    // Heavy melees.
+    "310"
+    {
+        "name"   "Warrior's Spirit"
+        "change" "+ If you fall at 300hu/s or faster, you will have guaranteed crits, until a short
+period of time after falling."
+        "change" "+ No damage vulnerability."
+        "change" "- 20% slower swing speed."
+    }
+    "426"
+    {
+        "name"   "Eviction Notice"
+        "macro"  "UNDERGOING_CHANGES"
+        "change" "+ No more health drain."
+        "change" "+ 50% faster firing speed."
+        "change" "- You no longer move 15% faster just for equipping this weapon."
+    }
+
     // Engineer primaries.
     "588"
     {
         "name"   "Pomson 6000"
-        "change" "This weapon is still undergoing changes."
+        "macro"  "UNDERGOING_CHANGES"
         "change" "+ Increased the projectile speed by 150%."
         "change" "+ Rewrote the base damage to be 60, with a rampup of 150% and falloff of 50%."
-        "change" "+ Decreased the reload speed by 25%."
     }
 
     // Sniper secondaries
@@ -270,6 +334,11 @@ longer weapon switch."
     }
 
     // Multi-class.
+    "133"
+    {
+        "name"   "Gunboats"
+        "change" "+ Can now be equipped by Demoman, as a secondary."
+    }
     "415"
     {
         "name"   "Reserve Shooter"

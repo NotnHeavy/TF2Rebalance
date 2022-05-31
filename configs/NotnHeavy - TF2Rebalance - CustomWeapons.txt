@@ -1,0 +1,18 @@
+// This config is used for the "equip" command.
+"CustomWeapons"
+{
+    "133"
+    {
+        "object" "tf_wearable"
+        "name"   "Gunboats"
+        "class"  "4" // Demoman
+        "slot"   "1" // Secondary
+    }
+    "264"
+    {
+        "object" "saxxy"
+        "name"   "Frying Pan"
+        "class"  "8 9" // Spy, Engineer
+        "slot"   "2"
+    }
+}

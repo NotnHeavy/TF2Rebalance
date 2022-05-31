@@ -41,6 +41,18 @@
 					"signature" "CTFPistol_ScoutPrimary::Push"
 				}
 			}
+
+			"CalculateMaxSpeed"
+			{
+				"windows"
+				{
+					"signature" "CTFPlayer::TeamFortress_CalculateMaxSpeed"
+				}
+				"linux"
+				{
+					"signature" "CTFPlayer::TeamFortress_CalculateMaxSpeed"
+				}
+			}
         }
 		"Offsets"
 		{
@@ -48,6 +60,11 @@
 			{
 				"windows" "156"
 				"linux"   "157"
+			}
+			"CBaseEntity::VPhysicsCollision"
+			{
+				"windows" "164"
+				"linux"   "165"
 			}
 
 			"CObjectDispenser::DispenseAmmo"
@@ -65,6 +82,11 @@
 			{
 				"windows" "332"
 				"linux"   "338"
+			}
+			"CBaseCombatWeapon::GetSlot"
+			{
+				"windows"	"330"
+				"linux"		"336"
 			}
 			
 			"CTFWeaponBase::GetMaxClip1"
@@ -112,6 +134,34 @@
 				"linux"   "233"
 			}
 
+			"CTFWeaponBaseGrenadeProj::Detonate"
+			{
+				"windows" "233"
+				"linux"   "234"
+			}
+
+			"CTFGrenadePipebombProjectile::GetDamageType"
+			{
+				"windows" "244"
+				"linux"   "245"
+			}
+			"CTFGrenadePipebombProjectile::m_bWallShatter"
+			{
+				"windows" "1334"
+				"linux"   "1350"
+			}
+
+			"CTFPlayer::EquipWearable"
+			{
+				"windows" "434"
+				"linux"   "435"
+			}
+			"CTFPlayer::m_hMyWearables"
+			{
+				"windows" "3520"
+				"linux"   "3540"
+			}
+
 			"Memory_CreateEnergyRingVelocity"
 			{
 				"windows" "107"
@@ -121,6 +171,11 @@
 			{
 				"windows" "838"
 				"linux"   "1166"
+			}
+			"Memory_SteakSpeedCapMultiplier"
+			{
+				"windows" "1449"
+				"linux"   "3987"
 			}
 		}
 		"Signatures"
@@ -142,6 +197,20 @@
                 "library" "server"
                 "linux"   "@g_pGameRules"
             }
+
+			// These item schema signatures are from TF2Attributes.
+			"GEconItemSchema"
+			{
+				"library" "server"
+				"windows" "\xE8\x2A\x2A\x2A\x2A\x83\xC0\x04\xC3"
+				"linux"	  "@_Z15GEconItemSchemav"	
+			}
+			"CEconItemSchema::GetItemDefinition"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x56\x8B\xF1\x8D\x45\x08\x57\x50\x8D\x8E\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x85\xC0"
+				"linux"	  "@_ZN15CEconItemSchema17GetItemDefinitionEi"
+			}
 
 			"CBaseEntity::TakeDamage"
 			{
@@ -170,6 +239,12 @@
 				"windows" "\x55\x8B\xEC\x83\xEC\x1C\x53\x56\x8B\xF1\x57"
 				"linux"   "@_ZN13CTFWeaponBase6DeployEv"
 			}
+			"CTFWeaponBase::ReloadSingly"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x83\xEC\x08\x57\x8B\xF9\xF3\x0F\x10\x87\xA4\x05\x00\x00"
+				"linux"   "\x55\x89\xE5\x57\x56\x89\xC6\x53\x83\xEC\x7C" // @_ZN13CTFWeaponBase12ReloadSinglyEv_part_217
+			}
 
 			"CTFWeaponBaseGun::GetWeaponSpread"
 			{
@@ -190,6 +265,13 @@
 				"library" "server"
 				"windows" "\x55\x8B\xEC\x81\xEC\x4C\x01\x00\x00\x56"
 				"linux"   "@_ZN22CTFPistol_ScoutPrimary4PushEv"
+			}
+
+			"CTFLunchBox::ApplyBiteEffects"
+			{
+				"library" "server"
+				"windows" "\x55\x8B\xEC\x51\x53\x8B\xD9\x56\x57\x6A\x01"
+				"linux"   "@_ZN11CTFLunchBox16ApplyBiteEffectsEP9CTFPlayer"
 			}
 
 			"CBaseObject::OnTakeDamage"
@@ -289,6 +371,24 @@
 					}
 				}
 			}
+			"CBaseEntity::VPhysicsCollision"
+			{
+				"offset"   "CBaseEntity::VPhysicsCollision"
+				"hooktype" "entity"
+				"this"     "entity"
+				"return"   "void"
+				"arguments"
+				{
+					"index"
+					{
+						"type" "int"
+					}
+					"pEvent"
+					{
+						"type" "int" // gamevcollisionevent_t*
+					}
+				}
+			}
 			"CObjectDispenser::DispenseAmmo"
 			{
 				"offset"   "CObjectDispenser::DispenseAmmo"
@@ -336,6 +436,13 @@
 				"return"	"bool" 
 				"this"		"entity"
 			}
+			"CTFWeaponBase::ReloadSingly"
+			{
+				"signature" "CTFWeaponBase::ReloadSingly"
+				"callconv"  "thiscall"
+				"return"    "bool"
+				"this"      "entity"
+			}
 			"CTFWeaponBaseGun::GetWeaponSpread"
 			{
 				"signature"	"CTFWeaponBaseGun::GetWeaponSpread"
@@ -356,6 +463,20 @@
 						"type" "cbaseentity"
 					}
 					"pOwner"
+					{
+						"type" "cbaseentity"
+					}
+				}
+			}
+			"CTFLunchBox::ApplyBiteEffects"
+			{
+				"signature" "CTFLunchBox::ApplyBiteEffects"
+				"callconv"  "thiscall"
+				"this"      "entity"
+				"return"    "void"
+				"arguments"
+				{
+					"pPlayer"
 					{
 						"type" "cbaseentity"
 					}
