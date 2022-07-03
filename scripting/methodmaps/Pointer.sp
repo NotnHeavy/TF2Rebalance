@@ -28,9 +28,9 @@ methodmap Pointer
     }
 
     // Methods.
-    public void Dereference(any offset = 0, NumberType bits = NumberType_Int32)
+    public any Dereference(any offset = 0, NumberType bits = NumberType_Int32)
     {
-        Dereference(this.Address + offset, bits);
+        return Dereference(this.Address + offset, bits);
     }
     public void Write(any value, any offset = 0, NumberType bits = NumberType_Int32)
     {

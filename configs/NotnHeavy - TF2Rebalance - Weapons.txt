@@ -2,11 +2,6 @@
 "WeaponChanges"
 {
     // Heavy changes. This is a very cheeky trick but it works.
-    "tf_wearable_demoshield"
-    {
-        "name"   "SHIELD"
-        "change" "elo"
-    }
     "tf_weapon_minigun"
     {
         "name"   "Heavy Weapons Guy"
@@ -62,7 +57,6 @@ out of this."
         "name"   "Sun-on-a-Stick"
         "change" "+ Inflicts 1.5s afterburn (which does not stack up) when hitting a player's back."
         "change" "+/- Replaced the 25% damage penalty with a 50% damage penalty vs non-burning players."
-        "change" "- 20% slower firing speed."
         "change" "- No random critical hits."
     }
     "355"
@@ -74,7 +68,7 @@ out of this."
     // Soldier primaries.
     "414"
     {
-        "name"   "Liberty Launcher"
+        "name"   "Schwicky Schwag (Liberty Launcher)"
         "macro"  "HOLSTER_CHANGE"
         "change" "+ Deploying and holstering is now 20% faster."
         "change" "+ Removed the 25% damage penalty."
@@ -118,7 +112,6 @@ change was made to weaken bombardments."
     {
         "name"   "Market Gardener"
         "macro"  "HOLSTER_CHANGE"
-        "change" "- 35% slower holster speed."
     }
 
     // Pyro primaries.
@@ -178,7 +171,7 @@ weapons that can ignite players until the player is no longer burning."
 player)."
         "change" "+ Shortened the recharge duration to 40s, or by 750 damage, however charge is not
 increased by the Gas Passer explosion."
-        "change" "+ Direct hits deal mini-crit damage."
+        "change" "+ Direct hits deal mini-crit damage on burning targets."
         "change" "- 33% more self damage from the blast."
     }
 
@@ -222,7 +215,6 @@ targets affected."
         "change" "+ Mini-crits targets launched airborne by explosions, grapple hooks or rocket 
 packs."
         "change" "+ Reloads entire clip at once."
-        "change" "+ Inflicts 100% more knockback on hit targets."
         "change" "+/- Pipes within a 100 HU range from the attacker now explode upon impact."
         "change" "- 25% slower reload speed."
         "change" "- 50% clip size."
@@ -281,6 +273,13 @@ longer weapon switch."
         "change" "+ 40% slower move speed while deployed, instead of 60%."
         "change" "+ 40% slower rev up speed, instead of 50%."
     }
+    "811 832"
+    {
+        "name"   "Huo-Long Heater"
+        "change" "+ The ring of fire can now be toggled via holding your reload key."
+        "change" "+ Changed the damage penalty to be vs non-burning players only."
+        "change" "- Consumes an extra 20 ammo if used without the minigun equipped."
+    }
 
     // Heavy secondaries.
     "311"
@@ -296,27 +295,45 @@ and Gloves of Running Urgently can now be used with this item."
     "310"
     {
         "name"   "Warrior's Spirit"
-        "change" "+ If you fall at 300hu/s or faster, you will have guaranteed crits, until a short
+        "change" "+ Pounce Attack: If you fall at 300hu/s or faster, you will have guaranteed crits, until a short
 period of time after falling."
         "change" "+ No damage vulnerability."
         "change" "- 20% slower swing speed."
     }
+    "331"
+    {
+        "name"   "Fists of Steel."
+        "change" "+/- Replaced the 100% longer holster speed with a 75% longer weapon switch penalty."
+    }
     "426"
     {
         "name"   "Eviction Notice"
-        "macro"  "UNDERGOING_CHANGES"
+        "change" "+ The speed boost now stacks and can go up to 15s."
         "change" "+ No more health drain."
         "change" "+ 50% faster firing speed."
         "change" "- You no longer move 15% faster just for equipping this weapon."
     }
 
     // Engineer primaries.
+    "141 1007"
+    {
+        "name"   "Frontier Justice"
+        "change" "- The crit cap has been reduced to 6."
+    }
     "588"
     {
         "name"   "Pomson 6000"
-        "macro"  "UNDERGOING_CHANGES"
         "change" "+ Increased the projectile speed by 150%."
         "change" "+ Rewrote the base damage to be 60, with a rampup of 150% and falloff of 50%."
+        "change" "- Removed the Uber and cloak drain mechanic."
+    }
+
+    // Engineer secondaries.
+    "140 1086"
+    {
+        "name"   "Wrangler"
+        "macro"  "UNDERGOING_CHANGES"
+        "change" "+ 75% less damage from your sentry gun."
     }
 
     // Sniper secondaries
@@ -339,6 +356,21 @@ period of time after falling."
         "name"   "Gunboats"
         "change" "+ Can now be equipped by Demoman, as a secondary."
     }
+    "154"
+    {
+        "name"   "Pain Train"
+        "change" "+ Can now be equipped by Pyro."
+    }
+    "264 880 939 954 1013 1127"
+    {
+        "264"    "Frying Pan"
+        "880"    "Freedom Staff"
+        "939"    "Bat Outta Hell"
+        "954"    "Memory Maker"
+        "1013"   "Ham Shank"
+        "1127"   "Crossing Guard"
+        "change" "+ Can now be equipped by Engineer and Spy."
+    }
     "415"
     {
         "name"   "Reserve Shooter"
@@ -350,6 +382,11 @@ period of time after falling."
     {
         "name"   "B.A.S.E. Jumper"
         "change" "+ The user now has 100% air control again."
+    }
+    "1123"
+    {
+        "name"   "Necro Smasher"
+        "change" "+ Can now be equipped by Spy."
     }
     "1153"
     {

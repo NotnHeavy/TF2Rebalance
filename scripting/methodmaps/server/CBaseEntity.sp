@@ -29,6 +29,10 @@ enum struct cbaseentityData
     // Panic Attack and the flamethrowers.
     float spreadMultiplier;
     float lastShot;
+
+    // Huo-Long Heater.
+    bool toggledRingOfFire;
+    bool holdingReload;
 }
 static cbaseentityData cbaseentities[MAX_ENTITY_COUNT];
 
@@ -140,6 +144,16 @@ methodmap CBaseEntity
         public get() { return cbaseentities[this].lastShot; }
         public set(float value) { cbaseentities[this].lastShot = value; }
     }
+    property bool ToggledRingOfFire
+    {
+        public get() { return cbaseentities[this].toggledRingOfFire; }
+        public set(bool toggle) { cbaseentities[this].toggledRingOfFire = toggle; }
+    }
+    property bool HoldingReload
+    {
+        public get() { return cbaseentities[this].holdingReload; }
+        public set(bool toggle) { cbaseentities[this].holdingReload = toggle; }
+    }
 
     // Property wrappers.
     property bool Exists
@@ -232,6 +246,7 @@ methodmap CBaseEntity
         cbaseentities[index].spawnPosition.Dispose();
         cbaseentities[index].spreadMultiplier = 1.00;
         cbaseentities[index].lastShot = 0.00;
+        cbaseentities[index].toggledRingOfFire = false;
         GetEntityClassname(index, cbaseentities[index].class, MAX_NAME_LENGTH);
 
         // SDKHooks.

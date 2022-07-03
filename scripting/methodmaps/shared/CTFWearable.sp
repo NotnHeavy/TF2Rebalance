@@ -40,6 +40,25 @@ methodmap CTFWearable < CEconEntity
                 // Apply new attributes.
                 this.setAttribute("rocket jump damage reduction", 0.40); // -60% blast damage from rocket jumps
             }
+
+            // Demoman secondary.
+            case 131: // chargin' targe troll mode
+            {
+                if (notnheavy_tf2rebalance_troll_mode.BoolValue)
+                {
+                    this.setAttribute("full charge turn control", 50.00);
+                    this.setAttribute("charge recharge rate increased", 1000.00);
+                    this.setAttribute("charge time increased", 10000000.00);
+                    this.setAttribute("dmg taken from blast reduced", 0.00);
+                }
+            }
+
+            // Multiclass weapons.
+            case 133: // gunboats troll mode
+            {
+                if (notnheavy_tf2rebalance_troll_mode.BoolValue)
+                    this.setAttribute("rocket jump damage reduction", 0.01);
+            }
         }
     }
 }

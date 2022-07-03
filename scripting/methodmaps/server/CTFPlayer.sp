@@ -70,6 +70,9 @@ enum struct ctfplayerData
 
     // Warrior's Spirit.
     float timeUntilNoPounceCrits;
+
+    // Eviction's Notice.
+    float expiryTimeOfSpeedBoost;
 }
 static ctfplayerData ctfplayers[MAXPLAYERS + 1];
 static CustomWeapon customWeapons[MAXPLAYERS + 1][CLASSES + 1][3]; // sourcemod let me put this inside enum structs dfsjjidfssdfsgfmsifksfd
@@ -90,6 +93,7 @@ methodmap CTFPlayer < CBaseEntity
         SDKHook(index, SDKHook_WeaponEquipPost, ClientEquippedWeapon);
         SDKHook(index, SDKHook_OnTakeDamage, ClientOnTakeDamage);
         ctfplayers[index].shownWelcomeMenu = false;
+        ctfplayers[index].expiryTimeOfSpeedBoost = 0.00;
 
         for (int i = 0; i < sizeof(customWeapons[]); ++i)
         {
@@ -243,6 +247,11 @@ methodmap CTFPlayer < CBaseEntity
     {
         public get() { return ctfplayers[this].timeUntilNoPounceCrits; }
         public set(float value) { ctfplayers[this].timeUntilNoPounceCrits = value; }
+    }
+    property float ExpiryTimeOfSpeedBoost
+    {
+        public get() { return ctfplayers[this].expiryTimeOfSpeedBoost; }
+        public set(float value) { ctfplayers[this].expiryTimeOfSpeedBoost = value; }
     }
 
     // Property wrappers.
@@ -588,9 +597,15 @@ methodmap CTFPlayer < CBaseEntity
         }
 
         if (this.GetPlayerClass() == TFClass_Heavy)
+        {
+            this.setAttribute("damage blast push", notnheavy_tf2rebalance_troll_mode.BoolValue ? 50.00 : 1.00); // Attrib_DamageBlastPush
             this.setAttribute("boots falling stomp", 1.00);
+        }
         else
+        {
+            this.setAttribute("damage blast push", 1.00); // Attrib_DamageBlastPush
             this.setAttribute("boots falling stomp", 0.00);
+        }
 
         this.TimeSinceSwitchFromNoAmmoWeapon = 0.00;
     }
@@ -631,6 +646,7 @@ methodmap CTFPlayer < CBaseEntity
         // Create weapon.
         TF2_TranslateWeaponEntForClass(this.Class, name, sizeof(name));
         CEconEntity weapon = CBaseEntity.Create(name);
+        weapon.SetMember(Prop_Send, "m_bValidatedAttachedEntity", true); // fuck you too
         weapon.SetMember(Prop_Send, "m_iItemDefinitionIndex", index);
         weapon.SetMember(Prop_Send, "m_bInitialized", 1);
         weapon.Dispatch();
@@ -685,7 +701,7 @@ methodmap CTFPlayer < CBaseEntity
             menu.AddItem("0", "Default");
             for (CustomWeapon definition = view_as<CustomWeapon>(1); definition != CustomWeapon.Length(); ++definition)
             {
-                if (definition.Slot == this.EquipMenuSlotChosen && definition.AllowedOnClass(this.Class) /*definition.Class == this.Class*/)
+                if (definition.Slot == this.EquipMenuSlotChosen && definition.AllowedOnClass(this.Class))
                 {
                     char name[256];
                     char index[256];

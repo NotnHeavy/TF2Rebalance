@@ -16,9 +16,10 @@ enum customweaponOffsets
     offsetObject = 0, // char Object[256];
     offsetName = 64, // char Name[256];
     offsetClasses = 128, // bool Classes[10];
-    offsetItemDefinitionIndex = 131, // int ItemDefinitionIndex
-    offsetSlot = 132, // int Slot
-    customweaponSize = 133
+    offsetItemDefinitionIndex = 131, // int ItemDefinitionIndex;
+    offsetSlot = 132, // int Slot;
+    offsetModelRecord = 133, // ModelInformation* ModelRecord;
+    customweaponSize = 134
 }
 static ArrayList customweaponCollection;
 
@@ -34,7 +35,7 @@ methodmap CustomWeapon
     {
         if (customweaponCollection == null)
         {
-            customweaponCollection = new ArrayList(view_as<int>(customweaponSize)); // char Object[256]; char Name[256]; bool Classes[10]; int ItemDefinitionIndex; int Slot;
+            customweaponCollection = new ArrayList(view_as<int>(customweaponSize));
             customweaponCollection.Push(0); // NULL_CUSTOM_WEAPON
         }
         return view_as<CustomWeapon>(customweaponCollection.PushArray({0, 0, 0})); 
@@ -84,24 +85,11 @@ methodmap CustomWeapon
         public get() { return customweaponCollection.Get(this.Index, view_as<int>(offsetSlot)); }
         public set(int value) { customweaponCollection.Set(this.Index, value, view_as<int>(offsetSlot)); }
     }
-
-    /*
-    property int ItemDefinitionIndex
+    property ModelInformation ModelRecord
     {
-        public get() { return customweaponCollection.Get(this.Index, 512); }
-        public set(int value) { customweaponCollection.Set(this.Index, value, 512); }
+        public get() { return customweaponCollection.Get(this.Index, view_as<int>(offsetModelRecord)); }
+        public set(ModelInformation value) { customweaponCollection.Set(this.Index, value, view_as<int>(offsetModelRecord)); }
     }
-    property TFClassType Class
-    {
-        public get() { return customweaponCollection.Get(this.Index, 513); }
-        public set(TFClassType value) { customweaponCollection.Set(this.Index, value, 513); }
-    }
-    property int Slot
-    {
-        public get() { return customweaponCollection.Get(this.Index, 514); }
-        public set(int value) { customweaponCollection.Set(this.Index, value, 514); }
-    }
-    */
     
     // Statics.
     public static CustomWeapon Length()

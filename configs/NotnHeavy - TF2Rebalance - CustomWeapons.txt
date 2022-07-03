@@ -8,11 +8,60 @@
         "class"  "4" // Demoman
         "slot"   "1" // Secondary
     }
+    "154"
+    {
+        "object" "tf_weapon_fireaxe"
+        "name"   "Pain Train"
+        "class"  "7" // Pyro
+        "slot"   "2" // Melee
+    }
     "264"
     {
         "object" "saxxy"
         "name"   "Frying Pan"
         "class"  "8 9" // Spy, Engineer
-        "slot"   "2"
+        "slot"   "2"   // Melee
+    }
+    "880"
+    {
+        "object" "saxxy"
+        "name"   "Freedom Staff"
+        "class"  "8 9" // Spy, Engineer
+        "slot"   "2"   // Melee
+    }
+    "939"
+    {
+        "object" "saxxy"
+        "name"   "Bat Outta Hell"
+        "class"  "8 9" // Spy, Engineer
+        "slot"   "2"   // Melee
+    }
+    "954"
+    {
+        "object" "saxxy"
+        "name"   "Memory Maker"
+        "class"  "8 9" // Spy, Engineer
+        "slot"   "2"   // Melee
+    }
+    "1013"
+    {
+        "object" "saxxy"
+        "name"   "Ham Shank"
+        "class"  "8 9" // Spy, Engineer
+        "slot"   "2"   // Melee
+    }
+    "1123"
+    {
+        "object" "saxxy"
+        "name"   "Necro Smasher"
+        "class"  "8" // Spy
+        "slot"   "2" // Melee
+    }
+    "1127"
+    {
+        "object" "saxxy"
+        "name"   "Crossing Guard"
+        "class"  "8 9" // Spy, Engineer
+        "slot"   "2"   // Melee
     }
 }

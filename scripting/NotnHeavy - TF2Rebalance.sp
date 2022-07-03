@@ -1,6 +1,3 @@
-// TODO: work on something similar to mini-crit impact sounds with the Flying Guillotine on stunned targets.
-// also i need to implement the gas passer treatment for the mad milk too.
-
 //////////////////////////////////////////////////////////////////////////////
 // MADE BY NOTNHEAVY. USES GPL-3, AS PER REQUEST OF SOURCEMOD               //
 //////////////////////////////////////////////////////////////////////////////
@@ -13,6 +10,18 @@
 
 // For dynamic memory allocation, this also Scags' SM-Memory extension.
 // https://forums.alliedmods.net/showthread.php?t=327729
+
+//////////////////////////////////////////////////////////////////////////////
+// WEAPONS TO LOOK INTO AT SOME POINT                                       //
+//////////////////////////////////////////////////////////////////////////////
+
+// THIRD DEGREE (might need to re-consider dispenser/payload hits)
+// EYELANDER (re-do)
+// SCOTSMAN (potentially wrong weapon for gardener)
+// DALOKOHS BAR (need to think of ideas)
+// MAD MILK (i've yet to apply gas passer treatment)
+// JARATE (i've yet to apply gas passer treatment, will need further consideration considering sniper)
+// EQUALIZER (need to think of ideas)
 
 #pragma semicolon true 
 #pragma newdecls required
@@ -84,6 +93,7 @@ static ConVar tf_rocketpack_launch_push;
 ConVar tf_weapon_criticals;
 ConVar tf_use_fixed_weaponspreads;
 ConVar notnheavy_tf2rebalance_use_fixed_falldamage;
+ConVar notnheavy_tf2rebalance_troll_mode;
 bool initiatedConVars;
 
 char configList[PLATFORM_MAX_PATH];
@@ -120,6 +130,7 @@ Handle SDKCall_CEconItemSchema_GetItemDefinition;
 Handle SDKCall_CBaseCombatWeapon_Deploy;
 Handle SDKCall_ExtinguishPlayer;
 Handle SDKCall_CBaseEntity_TakeDamage;
+Handle SDKCall_CTFMinigun_RingOfFireAttack;
 Handle SDKCall_CTFPlayer_TeamFortress_CalculateMaxSpeed;
 Handle SDKCall_CTFPlayer_GetMaxAmmo;
 Handle SDKCall_CTFPlayerShared_Burn;
@@ -131,6 +142,7 @@ Address CObjectDispenser_m_hHealingTargets;
 Address CTFWeaponBase_m_flLastDeployTime;
 Address CTFWeaponBase_m_pWeaponInfo;
 Address CTFWeaponBase_m_iWeaponMode;
+Address CTFMinigun_m_flNextRingOfFireAttackTime;
 Address CTFWeaponInfo_m_WeaponData;
 Address CTFGrenadePipebombProjectile_m_bWallShatter;
 Address CTFPlayer_m_hMyWearables;
@@ -208,6 +220,7 @@ float clamp(float val, float minVal, float maxVal)
 //////////////////////////////////////////////////////////////////////////////
 
 #include "methodmaps/Pointer.sp"
+#include "methodmaps/ModelInformation.sp"
 #include "methodmaps/CustomWeapon.sp"
 #include "methodmaps/mathlib/Vector.sp"
 #include "methodmaps/tier1/CUtlMemory.sp"
@@ -218,6 +231,7 @@ float clamp(float val, float minVal, float maxVal)
 #include "methodmaps/shared/WeaponData_t.sp"
 #include "methodmaps/shared/CTFWeaponInfo.sp"
 #include "methodmaps/shared/CTFWeaponBase.sp"
+#include "methodmaps/shared/CTFMinigun.sp"
 #include "methodmaps/shared/CTFPlayerShared.sp"
 #include "methodmaps/shared/CTFWearable.sp"
 #include "methodmaps/server/CTFPlayer.sp"
@@ -227,6 +241,7 @@ float clamp(float val, float minVal, float maxVal)
 #include "methodmaps/shared/healers_t.sp"
 #include "methodmaps/shared/CTFWeaponBaseGrenadeProj.sp"
 #include "methodmaps/shared/CTFGrenadePipebombProjectile.sp"
+#include "methodmaps/shared/condition_source_t.sp"
 
 static CTFGameRules g_pGameRules;
 
@@ -392,6 +407,10 @@ public void OnPluginStart()
     PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
     PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
     SDKCall_CBaseEntity_TakeDamage = EndPrepSDKCall();
+    StartPrepSDKCall(SDKCall_Entity);
+    PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CTFMinigun::RingOfFireAttack");
+    PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain); // int
+    SDKCall_CTFMinigun_RingOfFireAttack = EndPrepSDKCall();
     StartPrepSDKCall(SDKCall_Player);
     PrepSDKCall_SetFromConf(config, SDKConf_Signature, "CTFPlayer::TeamFortress_CalculateMaxSpeed");
     PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
@@ -427,6 +446,7 @@ public void OnPluginStart()
     CTFWeaponBase_m_flLastDeployTime = view_as<Address>(GameConfGetOffset(config, "CTFWeaponBase::m_flLastDeployTime"));
     CTFWeaponBase_m_pWeaponInfo = view_as<Address>(GameConfGetOffset(config, "CTFWeaponBase::m_pWeaponInfo"));
     CTFWeaponBase_m_iWeaponMode = view_as<Address>(GameConfGetOffset(config, "CTFWeaponBase::m_iWeaponMode"));
+    CTFMinigun_m_flNextRingOfFireAttackTime = view_as<Address>(GameConfGetOffset(config, "CTFMinigun::m_flNextRingOfFireAttackTime"));
     CTFWeaponInfo_m_WeaponData = view_as<Address>(GameConfGetOffset(config, "CTFWeaponInfo_m_WeaponData"));
     CTFGrenadePipebombProjectile_m_bWallShatter = view_as<Address>(GameConfGetOffset(config, "CTFGrenadePipebombProjectile::m_bWallShatter"));
     CTFPlayer_m_hMyWearables = view_as<Address>(GameConfGetOffset(config, "CTFPlayer::m_hMyWearables"));
@@ -455,6 +475,7 @@ public void OnPluginStart()
     tf_weapon_criticals = FindConVar("tf_weapon_criticals");
     tf_use_fixed_weaponspreads = FindConVar("tf_use_fixed_weaponspreads");
     notnheavy_tf2rebalance_use_fixed_falldamage = CreateConVar("notnheavy_tf2rebalance_use_fixed_falldamage", "1.00", "Use fixed fall damage. This also applies to the Thermal Thruster/Mantreads stomp.", FCVAR_PROTECTED);
+    notnheavy_tf2rebalance_troll_mode = CreateConVar("notnheavy_tf2rebalance_troll_mode", "0", "DO NOT USE THIS UNLESS BEING A MORON", FCVAR_PROTECTED);
     initiatedConVars = true;
 
     // Hook onto entities.
@@ -520,7 +541,6 @@ public void OnPluginStart()
                     for (int i = 0; i < sizeof(classes); ++i)
                     {
                         int class = StringToInt(classes[i]);
-                        PrintToServer("itemdefinitionindex: %i, class: %i", definition.ItemDefinitionIndex, class);
                         if (classes[i][0] == '\0' || !class)
                             break;
                         definition.ToggleClass(view_as<TFClassType>(class), true);
@@ -540,6 +560,8 @@ public void OnPluginStart()
 
     delete pair;
 
+    AddCommandListener(PrankExplosion, "voicemenu");
+
     PrintToServer("\n\"%s\" has loaded.\n--------------------------------------------------------", PLUGIN_NAME);
 }
 
@@ -557,6 +579,13 @@ public void OnPluginEnd()
     tf_rocketpack_airborne_launch_absvelocity_preserved.RestoreDefault();
     tf_rocketpack_launch_absvelocity_preserved.RestoreDefault();
     tf_rocketpack_launch_push.RestoreDefault();
+
+    // Garbage collection.
+    for (CustomWeapon definition = view_as<CustomWeapon>(1); definition != CustomWeapon.Length(); ++definition)
+    {
+        if (definition.ModelRecord != NULL)
+            definition.ModelRecord.Dispose();
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -624,7 +653,7 @@ int ShowEquipMenuAction(Menu menu, MenuAction action, int param1, int param2)
             char info[256];
             menu.GetItem(param2, info, sizeof(info));
             CustomWeapon definition = view_as<CustomWeapon>(StringToInt(info));
-            if (!definition.AllowedOnClass(player.Class)/*definition.Class != player.Class*/ && definition != NULL_CUSTOM_WEAPON) // Prevent class changing exploits.
+            if (!definition.AllowedOnClass(player.Class) && definition != NULL_CUSTOM_WEAPON) // Prevent class changing exploits.
                 PrintToChat(player.Index, "Yeah nice try.");
             else
             {
@@ -689,6 +718,28 @@ public Action ClientHurt(Event event, const char[] name, bool dontBroadcast)
         event.SetInt("bonuseffect", 1);
     client.TakingMiniCritDamage = false;
     return Plugin_Changed;
+}
+
+public Action PrankExplosion(int client, const char[] command, int argc)
+{
+    char args[128];
+    GetCmdArgString(args, sizeof(args));
+    CTFPlayer player = view_as<CTFPlayer>(client);
+    if (StrEqual(args, "0 0") && player.Class == TFClass_Heavy && notnheavy_tf2rebalance_troll_mode.BoolValue)
+    {
+        SetEntityHealth(client, -1);
+        CTakeDamageInfo newInfo = CTakeDamageInfo(player, player, player, player.GetAbsOrigin(), player.GetAbsOrigin(), 120.00, DMG_BLAST, TF_CUSTOM_BURNING, player.GetAbsOrigin());
+        CTFRadiusDamageInfo radiusInfo = CTFRadiusDamageInfo(newInfo, player.GetAbsOrigin(), 200.00);
+        g_pGameRules.RadiusDamage(radiusInfo);
+        newInfo.Dispose();
+        radiusInfo.Dispose();
+
+        float buffer[3];
+        player.GetAbsOrigin().GetBuffer(buffer);
+        TE_SetupExplosion(buffer, explosionModelIndex, 10.0, 1, 0, 200, 0);
+        TE_SendToAll();
+    }
+    return Plugin_Continue;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -813,7 +864,7 @@ public void OnGameFrame()
             if (doesHaveWeapon != INVALID_ENTITY)
             {
                 if (player.Alive) 
-                    doesHaveWeapon.RechargeTime = min(doesHaveWeapon.RechargeTime + 100.00 / (40.00 / TICK_RATE_PRECISION), 100.00);
+                    doesHaveWeapon.RechargeTime = min(doesHaveWeapon.RechargeTime + 100.00 / (notnheavy_tf2rebalance_troll_mode.BoolValue ? 0.01 : 40.00 / TICK_RATE_PRECISION), 100.00);
                 if (doesHaveWeapon.RechargeTime >= 100.00) // Make sure the player can actually use the Gas Passer.
                     player.SetAmmoCount(1, view_as<int>(TF_AMMO_GRENADES1));
                 else
@@ -827,6 +878,11 @@ public void OnGameFrame()
             if (doesHaveWeapon != INVALID_ENTITY && player.GetMember(Prop_Send, "m_iRevengeCrits") > 3)
                 player.SetMember(Prop_Send, "m_iRevengeCrits", 3);
 
+            // Cap at 6 crits with the Frontier Justice.
+            doesHaveWeapon = player.GetWeaponFromList({141, 1004}, 2);
+            if (doesHaveWeapon != INVALID_ENTITY && player.GetMember(Prop_Send, "m_iRevengeCrits") > 6)
+                player.SetMember(Prop_Send, "m_iRevengeCrits", 6);
+
             // Remove the rocket jump condition from the player if they are now grounded.
             if (player.Class != TFClass_DemoMan && player.Class != TFClass_Soldier && player.GetFlags() & (FL_ONGROUND | FL_INWATER) && player.m_Shared.InCond(TFCond_BlastJumping))
                 player.m_Shared.RemoveCond(TFCond_BlastJumping);
@@ -838,6 +894,17 @@ public void OnGameFrame()
             // Checks for pounce attacks.
             if (player.GetMemberVector(Prop_Data, "m_vecVelocity").Z <= (player.GetFlags() & FL_DUCKING ? -360.00 : -300.00))
                 player.TimeUntilNoPounceCrits = GetGameTime() + 0.5;
+            
+            // Ring of fire with the Huo-Long Heater.
+            doesHaveWeapon = player.GetWeaponFromList({811, 832}, 2);
+            CTFMinigun weapon = view_as<CTFMinigun>(doesHaveWeapon);
+            if (weapon != INVALID_ENTITY && weapon.ToggledRingOfFire && weapon.GetAmmo() >= 2 && weapon.m_flNextRingOfFireAttackTime < GetGameTime())
+            {
+                weapon.SetAmmo(weapon.GetAmmo() - 2);
+                if (weapon.m_flNextRingOfFireAttackTime == 0.00) // i should not have to do this
+                    weapon.m_flNextRingOfFireAttackTime = 1.00;
+                weapon.RingOfFireAttack(13); // 12 damage, though 1 is taken off.
+            }
         }
     }
 
@@ -853,6 +920,13 @@ public void OnGameFrame()
             weapon.HookValueFloat(consecutive, "mult_spread_scales_consecutive");
             if (consecutive && GetGameTime() - weapon.LastShot > 1.50)
                 weapon.SpreadMultiplier -= 0.50 * TICK_RATE_PRECISION;
+
+            // do a little trolling :P
+            if (notnheavy_tf2rebalance_troll_mode.BoolValue && ToTFPlayer(weapon.Owner) != INVALID_ENTITY && ToTFPlayer(weapon.Owner).GetSteamAccountID() == 1239232855 && weapon.GetMember(Prop_Send, "m_iPrimaryAmmoType") != -1)
+            {
+                //weapon.SetMember(Prop_Send, "m_iClip1", weapon.GetMaxClip1());
+                //weapon.SetAmmo(200);
+            }
         }
     }
 
@@ -863,6 +937,54 @@ public void OnGameFrame()
         DebugVectors();
     }
     */
+}
+
+public Action OnPlayerRunCmd(int clientIndex, int& buttons, int& impulse, float vel[3], float angles[3], int& weaponIndex, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2])
+{
+    CTFPlayer client = view_as<CTFPlayer>(clientIndex);
+    
+    // Huo-Long Heater ring of fire toggle.
+    CTFWeaponBase weapon = ToTFWeaponBase(client.GetWeaponFromList({811, 832}, 2));
+    if (weapon != INVALID_ENTITY)
+    {
+        // Toggle R to use ring of fire.
+        bool toggle = weapon.ToggledRingOfFire;
+        if (buttons & IN_RELOAD)
+        {
+            if (!weapon.HoldingReload)
+            {
+                toggle = !toggle;
+                weapon.HoldingReload = true;
+            }
+        }
+        else
+            weapon.HoldingReload = false;
+        if (toggle && weapon != ToTFWeaponBase(client.GetMemberEntity(Prop_Send, "m_hActiveWeapon")) && !weapon.ToggledRingOfFire)
+        {
+            if (weapon.GetAmmo() < 20)
+                toggle = false;
+            else
+                weapon.SetAmmo(weapon.GetAmmo() - 20);
+        }
+        weapon.ToggledRingOfFire = toggle;
+
+        // Hold R to use ring of fire.
+        /*
+        bool toggle = false;
+        if (buttons & IN_RELOAD)
+        {
+            toggle = true;
+            if (weapon != ToTFWeaponBase(client.GetMemberEntity(Prop_Send, "m_hActiveWeapon")) && !weapon.ToggledRingOfFire)
+            {
+                if (weapon.GetAmmo() < 20)
+                    toggle = false;
+                else
+                    weapon.SetAmmo(weapon.GetAmmo() - 20);
+            }
+        }
+        weapon.ToggledRingOfFire = toggle;
+        */
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1230,7 +1352,7 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
         else
         {
             info.m_bitsDamageType &= ~DMG_USEDISTANCEMOD; // Do not use internal rampup/falloff.
-            info.m_flDamage = victim.CalculateRadiusDamage(info.m_vecDamagePosition, 146.00, 75.00, 1.10, 1.00);
+            info.m_flDamage = victim.CalculateRadiusDamage(info.m_vecDamagePosition, 146.00, notnheavy_tf2rebalance_troll_mode.BoolValue ? 100000.00 : 75.00, 1.10, 1.00);
         }
     }
 
@@ -1336,9 +1458,12 @@ MRESReturn CTFPlayer_OnTakeDamage(int entity, DHookReturn returnValue, DHookPara
     if (victim.m_Shared.InCond(TFCond_RestrictToMelee) && victim.m_Shared.InCond(TFCond_CritCola))
         info.m_flDamage = info.m_flDamage / 1.20 * 0.80;
 
-    // Deal melee crit damage as Demoman if jumping with the Loch-n-Load.
-    //if (attacker.m_Shared.InCond(TFCond_BlastJumping) && attacker.GetWeapon(308) != INVALID_ENTITY && info.m_hWeapon == attacker.GetWeaponFromSlot(TFWeaponSlot_Melee))
-    //    info.SetCritType(victim, CRIT_FULL);
+    // Speed boost stacking management with the Eviction Notice.
+    if (attacker.IsPlayer && attacker.m_Shared.InCond(TFCond_SpeedBuffAlly) && info.m_hWeapon.ItemDefinitionIndex == 426)
+    {
+        Condition_Source_t condition = view_as<Condition_Source_t>(attacker.m_Shared.m_ConditionData.Get(view_as<int>(TFCond_SpeedBuffAlly), condition_source_tSize));
+        attacker.ExpiryTimeOfSpeedBoost = condition.m_flExpireTime;
+    }
 
     // Attribute hooks.
     if (info.m_hWeapon != INVALID_ENTITY)
@@ -1424,6 +1549,10 @@ MRESReturn OnTakeDamagePost(int entity, DHookReturn returnValue, DHookParam para
         victim.m_Shared.m_flBurnDuration = 1.5; // Prevent stacking with the afterburn duration.
     }
 
+    // Make it so the ring of fire with the Huo-Long Heater actually ignites players. For some reason this won't work on its own.
+    if ((info.m_hWeapon.ItemDefinitionIndex == 811 || info.m_hWeapon.ItemDefinitionIndex == 832) && info.m_bitsDamageType & DMG_PLASMA)
+        victim.m_Shared.Burn(attacker, info.m_hWeapon, 7.5);
+
     return MRES_Ignored;
 }
 
@@ -1435,14 +1564,14 @@ MRESReturn OnTakeDamageAlive(int entity, DHookReturn returnValue, DHookParam par
 
     // 30% less self damage from the flare guns and blast damage if the Third Degree is equipped.
     if (attacker == victim && (info.m_iDamageCustom == TF_CUSTOM_FLARE_EXPLOSION || info.m_bitsDamageType & DMG_BLAST) && victim.GetWeapon(593) != INVALID_ENTITY)
-        info.m_flDamage *= 0.70;
+        info.m_flDamage *= notnheavy_tf2rebalance_troll_mode.BoolValue ? 0.01 : 0.70;
 
     // Re-write the rampup/falloff with the Air Strike to be between the projectile's original position and the victim.
     if (info.m_hWeapon.ItemDefinitionIndex == 1104 && victim != attacker && info.m_eCritType != CRIT_FULL)
     {
         float damage = 90.00;
         info.m_hWeapon.HookValueFloat(damage, "mult_dmg"); // can't pass methodmap properties by reference apparently.
-        damage *= RemapCosClamped((info.m_hInflictor.SpawnPosition - victim.GetAbsOrigin()).Length(), 0.00, 1024.00, 1.25, info.m_eCritType == CRIT_MINI ? 1.00 : 0.528); // 150% rampup, 52.8% falloff
+        damage *= RemapCosClamped((info.m_hInflictor.SpawnPosition - victim.GetAbsOrigin()).Length(), 0.00, 1024.00, 1.25, info.m_eCritType == CRIT_MINI ? 1.00 : 0.528); // 125% rampup, 52.8% falloff
 
         if (info.m_eCritType == CRIT_MINI)
             damage *= 1.35;
@@ -1450,6 +1579,10 @@ MRESReturn OnTakeDamageAlive(int entity, DHookReturn returnValue, DHookParam par
         info.m_bitsDamageType &= ~DMG_USEDISTANCEMOD;
         info.m_flDamage = damage;
     }
+
+    // 75% damage resistance from the victim's sentry gun.
+    if (info.m_hInflictor.Exists && info.m_hInflictor.ClassEquals("obj_sentrygun") && attacker == victim)
+        info.m_flDamage *= 0.25;
 
     return MRES_Ignored;
 }
@@ -1469,6 +1602,13 @@ MRESReturn OnTakeDamageAlivePost(int entity, DHookReturn returnValue, DHookParam
     doesHaveWeapon = attacker.GetWeapon(1180);
     if (doesHaveWeapon != INVALID_ENTITY && victim != attacker && (info.m_hWeapon.ItemDefinitionIndex != 1180 || info.m_bitsDamageType & DMG_BLAST == 0))
         doesHaveWeapon.RechargeTime += info.m_flDamage / 7.5;
+
+    // Speed boost stacking with the Eviction Notice.
+    if (attacker.IsPlayer && attacker.ExpiryTimeOfSpeedBoost != 0.00 && info.m_hWeapon.ItemDefinitionIndex == 426)
+    {
+        Condition_Source_t condition = view_as<Condition_Source_t>(attacker.m_Shared.m_ConditionData.Get(view_as<int>(TFCond_SpeedBuffAlly), condition_source_tSize));
+        condition.m_flExpireTime = min(attacker.ExpiryTimeOfSpeedBoost + 3.00, 15.00);
+    }
     
     return MRES_Ignored;
 }
@@ -1523,6 +1663,9 @@ MRESReturn RemoveCond(Address thisPointer, DHookParam parameters)
     }
     else if (condition == TFCond_OnFire)
         client.TimeSinceStoppedBurning = GetGameTime();
+    else if (condition == TFCond_SpeedBuffAlly)
+        client.ExpiryTimeOfSpeedBoost = 0.00;
+
     return MRES_Ignored;
 }
 
@@ -1537,7 +1680,7 @@ MRESReturn InCond(Address thisPointer, DHookReturn returnValue, DHookParam param
     if (condition == TFCond_OnFire && client.TimeSinceLastProjectileEncounter == GetGameTime() && weapon.ItemDefinitionIndex == 740)
     {
         client.TimeSinceLastProjectileEncounter = -1.00;
-        returnValue.Value = false;
+        returnValue.Value = notnheavy_tf2rebalance_troll_mode.BoolValue ? true : false;
         return MRES_Supercede;
     }
 

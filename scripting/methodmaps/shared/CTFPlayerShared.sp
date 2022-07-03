@@ -11,9 +11,10 @@
 
 enum ctfplayersharedOffsets
 {
+    ConditionData = 8,
     pOuter = 400,
     aHealers = 404,
-    flBurnDuration = 520,
+    flBurnDuration = 520
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -33,6 +34,10 @@ methodmap CTFPlayerShared
     }
 
     // CTFPlayerShared members.
+    property CUtlVector m_ConditionData
+    {
+        public get() { return view_as<CUtlVector>(this.Address + view_as<Address>(ConditionData)); }
+    }
     property CBaseEntity m_pOuter // TODO when methodmap declarations come out: return as CTFPlayer instead.
     {
         public get() { return CBaseEntity.Dereference(this.Address + view_as<Address>(pOuter)); }
