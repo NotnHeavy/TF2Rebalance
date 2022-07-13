@@ -9,7 +9,6 @@
 #pragma newdecls required
 
 #define MAX_WEAPONS 48
-#define CLASSES 9
 
 //////////////////////////////////////////////////////////////////////////////
 // CTFPLAYER DATA                                                           //
@@ -75,7 +74,7 @@ enum struct ctfplayerData
     float expiryTimeOfSpeedBoost;
 }
 static ctfplayerData ctfplayers[MAXPLAYERS + 1];
-static CustomWeapon customWeapons[MAXPLAYERS + 1][CLASSES + 1][3]; // sourcemod let me put this inside enum structs dfsjjidfssdfsgfmsifksfd
+static CustomWeapon customWeapons[MAXPLAYERS + 1][CLASSES + 1][3]; // cannot put this in enum structs :(
 
 //////////////////////////////////////////////////////////////////////////////
 // CTFPLAYER METHODMAP                                                      //
@@ -556,7 +555,7 @@ methodmap CTFPlayer < CBaseEntity
         menu.DrawText(buffer);
         Format(buffer, sizeof(buffer), "Random bullet spread: %s", tf_use_fixed_weaponspreads.IntValue ? "off" : "on");
         menu.DrawText(buffer);
-        Format(buffer, sizeof(buffer), "Random fall damage modifier: %s", !initiatedConVars || notnheavy_tf2rebalance_use_fixed_falldamage.IntValue ? "off" : "on");
+        Format(buffer, sizeof(buffer), "Random fall damage modifier: %s", !initiatedConVars || tf_fall_damage_disablespread.IntValue ? "off" : "on");
         menu.DrawText(buffer);
 
         menu.DrawItem("Exit", ITEMDRAW_CONTROL);
@@ -586,6 +585,14 @@ methodmap CTFPlayer < CBaseEntity
             CTFWeaponBase entity = ToTFWeaponBase(ctfplayers[this].weapons[i]);
             if (entity == view_as<CTFWeaponBase>(INVALID_ENTITY))
                 break;
+
+            // Check for Mantreads temp test.
+            CEconEntity wearable = this.GetWeapon(444);
+            if (wearable != INVALID_ENTITY && wearable.CustomWeaponNameEquals("Mantreads temp test"))
+            {
+                entity.SetMember(Prop_Send, "m_iClip1", 0);
+                continue;
+            }
             
             // Do not get max clip and start firing straight away with the Beggar's Bazooka.
             int auto_fires_full_clip = 0;
@@ -641,11 +648,39 @@ methodmap CTFPlayer < CBaseEntity
                 this.SetAmmoCount(tfweapon.GetMaxClip1(), tfweapon.GetMember(Prop_Send, "m_iPrimaryAmmoType"));
         }
     }
+    /*
     public void AllocateNewWeapon(char name[256], int index)
     {
         // Create weapon.
         TF2_TranslateWeaponEntForClass(this.Class, name, sizeof(name));
         CEconEntity weapon = CBaseEntity.Create(name);
+        weapon.SetMember(Prop_Send, "m_bValidatedAttachedEntity", true); // fuck you too
+        weapon.SetMember(Prop_Send, "m_iItemDefinitionIndex", index);
+        weapon.SetMember(Prop_Send, "m_bInitialized", 1);
+        weapon.Dispatch();
+
+        // Set owner.
+        weapon.SetMember(Prop_Send, "m_iAccountID", this.GetSteamAccountID());
+        weapon.SetMemberEntity(Prop_Send, "m_hOwnerEntity", this);
+
+        // Equip weapon.
+        this.RemoveWeaponSlot(weapon.GetDefaultItemSlot());
+        this.EquipWeapon(weapon);
+    }
+    */
+    public void AllocateNewWeapon(CustomWeapon definition)
+    {
+        // Get all information needed.
+        char name[256];
+        char weaponName[256];
+        int index = definition.ItemDefinitionIndex;
+        definition.GetObject(name);
+        definition.GetName(weaponName);
+
+        // Create weapon.
+        TF2_TranslateWeaponEntForClass(this.Class, name, sizeof(name));
+        CEconEntity weapon = CBaseEntity.Create(name);
+        weapon.SetCustomWeaponName(weaponName);
         weapon.SetMember(Prop_Send, "m_bValidatedAttachedEntity", true); // fuck you too
         weapon.SetMember(Prop_Send, "m_iItemDefinitionIndex", index);
         weapon.SetMember(Prop_Send, "m_bInitialized", 1);
@@ -667,20 +702,13 @@ methodmap CTFPlayer < CBaseEntity
             {
                 if (i == view_as<int>(this.Class) && customWeapons[this][i][v] != NULL_CUSTOM_WEAPON)
                 {
-                    char objectName[256];
-                    customWeapons[this][i][v].GetObject(objectName);
-                    this.AllocateNewWeapon(objectName, customWeapons[this][i][v].ItemDefinitionIndex);
+                    //char objectName[256];
+                    //customWeapons[this][i][v].GetObject(objectName);
+                    this.AllocateNewWeapon(customWeapons[this][i][v]); // objectName, customWeapons[this][i][v].ItemDefinitionIndex);
                 }
             }
         }
     }
-    /*
-    // This gives the player the Gunboats.
-    public void temp()
-    {
-        customWeapons[this][view_as<int>(TFClass_DemoMan)][1] = view_as<CustomWeapon>(1);
-    }
-    */
     public void CreateEquipMenu()
     {
         Menu menu = new Menu(ShowEquipMenuAction);

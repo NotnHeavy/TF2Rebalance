@@ -233,8 +233,7 @@ packs."
         "266"    "Horseless Headless Horsemann's Headtaker"
         "482"    "Nessie's Nine Iron"
         "1082"   "Eyelander"
-        "change" "- 80% less max secondary ammo on wearer."
-        "change" "- Each head, up to 4, gives 6% more speed instead of 8%."
+        "change" "- Heads do not increase health."
     }
     "172"
     {
@@ -256,7 +255,10 @@ longer weapon switch."
     "327"
     {
         "name"   "Claidheamh Mòr"
+        "change" "Stock:"
         "change" "+ 15 health restored on kill."
+        "change" "Test 1:"
+        "change" "+ 100% increase in turning control while charging"
     }
 
     // Heavy primaries.
@@ -332,8 +334,9 @@ period of time after falling."
     "140 1086"
     {
         "name"   "Wrangler"
-        "macro"  "UNDERGOING_CHANGES"
         "change" "+ 75% less damage from your sentry gun."
+        "change" "- The sentry resistance is no longer a constant 66%. Instead, it scales to 33% when equipping and scales 
+back to normal damage when unequipping."
     }
 
     // Sniper secondaries

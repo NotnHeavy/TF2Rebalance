@@ -9,6 +9,9 @@
 #define INVALID_ENTITY view_as<CBaseEntity>(-1)
 #define ENTITY_NULL view_as<CBaseEntity>(0)
 
+#define SHIELD_NORMAL_VALUE_OLD 0.33
+#define SHIELD_NORMAL_VALUE_NEW 0.67
+
 //////////////////////////////////////////////////////////////////////////////
 // CBASEENTITY DATA                                                         //
 //////////////////////////////////////////////////////////////////////////////
@@ -25,6 +28,9 @@ enum struct cbaseentityData
     float timestamp;
     float rechargeTime;
     float lastHolsterTime;
+
+    // Custom weapons.
+    char customWeaponName[MAX_NAME_LENGTH];
     
     // Panic Attack and the flamethrowers.
     float spreadMultiplier;
@@ -33,6 +39,9 @@ enum struct cbaseentityData
     // Huo-Long Heater.
     bool toggledRingOfFire;
     bool holdingReload;
+    
+    // Sentry Wrangler resistance.
+    float shieldResistance;
 }
 static cbaseentityData cbaseentities[MAX_ENTITY_COUNT];
 
@@ -154,20 +163,20 @@ methodmap CBaseEntity
         public get() { return cbaseentities[this].holdingReload; }
         public set(bool toggle) { cbaseentities[this].holdingReload = toggle; }
     }
-
-    // Property wrappers.
-    property bool Exists
+    property float ShieldResistance
     {
-        public get() { return IsValidEntity(this.Index); }
+        public get() { return cbaseentities[this].shieldResistance; }
+        public set(float value) { cbaseentities[this].shieldResistance = clamp(value, SHIELD_NORMAL_VALUE_NEW, 1.00); }
     }
-    property Address Address
+
+    // Public properties - buffers.
+    public void GetCustomWeaponName(char[] buffer, int length)
     {
-        public get()
-        {
-            if (this.Exists)
-                return GetEntityAddress(this.Index);
-            return Address_Null;
-        }
+        strcopy(buffer, length, cbaseentities[this].customWeaponName);
+    }
+    public void SetCustomWeaponName(char[] buffer)
+    {
+        strcopy(cbaseentities[this].customWeaponName, sizeof(cbaseentities[].customWeaponName), buffer);
     }
 
     // Public methods.
@@ -179,6 +188,10 @@ methodmap CBaseEntity
     public bool ClassEquals(char[] other)
     {
         return StrEqual(cbaseentities[this].class, other);
+    }
+    public bool CustomWeaponNameEquals(char[] other)
+    {
+        return StrEqual(cbaseentities[this].customWeaponName, other);
     }
     public Vector GetAbsOrigin(bool center = true, bool global = true)
     {
@@ -222,6 +235,21 @@ methodmap CBaseEntity
         DispatchSpawn(this.Index);
     }
 
+    // Property wrappers.
+    property bool Exists
+    {
+        public get() { return IsValidEntity(this.Index); }
+    }
+    property Address Address
+    {
+        public get()
+        {
+            if (this.Exists)
+                return GetEntityAddress(this.Index);
+            return Address_Null;
+        }
+    }
+
     // CBaseEntity members.
     property bool IsPlayer
     {
@@ -247,6 +275,7 @@ methodmap CBaseEntity
         cbaseentities[index].spreadMultiplier = 1.00;
         cbaseentities[index].lastShot = 0.00;
         cbaseentities[index].toggledRingOfFire = false;
+        cbaseentities[index].shieldResistance = 1.00;
         GetEntityClassname(index, cbaseentities[index].class, MAX_NAME_LENGTH);
 
         // SDKHooks.
@@ -261,7 +290,7 @@ methodmap CBaseEntity
         else if (StrContains(cbaseentities[index].class, "tf_projectile_") != -1)
             DHookEntity(DHooks_CBaseEntity_Deflected, false, index, _, Deflected);
         else if (StrEqual(cbaseentities[index].class, "tf_weapon_sword"))
-            DHookEntity(DHooks_CTFSword_GetSwordSpeedMod, false, index, _, GetSwordSpeedMod);
+            DHookEntity(DHooks_CTFSword_GetSwordHealthMod, false, index, _, GetSwordHealthMod);
         DHookEntity(DHooks_CBaseEntity_VPhysicsCollision, false, index, _, VPhysicsCollision);
 
         return entity;

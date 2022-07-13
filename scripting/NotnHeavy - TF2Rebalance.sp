@@ -16,8 +16,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 // THIRD DEGREE (might need to re-consider dispenser/payload hits)
-// EYELANDER (re-do)
-// SCOTSMAN (potentially wrong weapon for gardener)
+// SCOTSMAN SKULLCUTTER (potentially wrong weapon as gardener)
 // DALOKOHS BAR (need to think of ideas)
 // MAD MILK (i've yet to apply gas passer treatment)
 // JARATE (i've yet to apply gas passer treatment, will need further consideration considering sniper)
@@ -92,7 +91,7 @@ static ConVar tf_rocketpack_launch_absvelocity_preserved;
 static ConVar tf_rocketpack_launch_push;
 ConVar tf_weapon_criticals;
 ConVar tf_use_fixed_weaponspreads;
-ConVar notnheavy_tf2rebalance_use_fixed_falldamage;
+ConVar tf_fall_damage_disablespread;
 ConVar notnheavy_tf2rebalance_troll_mode;
 bool initiatedConVars;
 
@@ -101,7 +100,7 @@ char configList[PLATFORM_MAX_PATH];
 DHookSetup DHooks_CBaseEntity_Deflected;
 DHookSetup DHooks_CBaseEntity_VPhysicsCollision;
 DHookSetup DHooks_CObjectDispenser_DispenseAmmo;
-DHookSetup DHooks_CTFSword_GetSwordSpeedMod;
+DHookSetup DHooks_CTFSword_GetSwordHealthMod;
 DHookSetup DHooks_CTFProjectile_Jar_Explode;
 
 DHookSetup DHooks_CTFWeaponBase_Deploy;
@@ -116,7 +115,6 @@ DHookSetup DHooks_CTFPlayer_TeamFortress_CalculateMaxSpeed;
 DHookSetup DHooks_CTFPlayerShared_AddCond;
 DHookSetup DHooks_CTFPlayerShared_RemoveCond;
 DHookSetup DHooks_CTFPlayerShared_InCond;
-DHookSetup DHooks_CTFGameRules_FlPlayerFallDamage;
 
 Handle SDKCall_CBaseCombatWeapon_GetName;
 Handle SDKCall_CBaseCombatWeapon_GetSlot;
@@ -180,6 +178,13 @@ enum
 	TF_RELOADING,
 	TF_RELOADING_CONTINUE,
 	TF_RELOAD_FINISH
+};
+
+enum
+{
+	SHIELD_NONE = 0,
+	SHIELD_NORMAL,	// 33% damage taken, no tracking
+	SHIELD_MAX,		// 10% damage taken, tracking
 };
 
 /*
@@ -299,6 +304,8 @@ public Plugin myinfo =
 // INITIALISATION                                                           //
 //////////////////////////////////////////////////////////////////////////////
 
+
+
 public void OnPluginStart()
 {
     LoadTranslations("common.phrases");
@@ -324,7 +331,7 @@ public void OnPluginStart()
     DHooks_CBaseEntity_Deflected = DHookCreateFromConf(config, "CBaseEntity::Deflected");
     DHooks_CBaseEntity_VPhysicsCollision = DHookCreateFromConf(config, "CBaseEntity::VPhysicsCollision");
     DHooks_CObjectDispenser_DispenseAmmo = DHookCreateFromConf(config, "CObjectDispenser::DispenseAmmo");
-    DHooks_CTFSword_GetSwordSpeedMod = DHookCreateFromConf(config, "CTFSword::GetSwordSpeedMod");
+    DHooks_CTFSword_GetSwordHealthMod = DHookCreateFromConf(config, "CTFSword::GetSwordHealthMod");
     DHooks_CTFProjectile_Jar_Explode = DHookCreateFromConf(config, "CTFProjectile_Jar::Explode");
 
     DHooks_CTFWeaponBase_Deploy = DHookCreateFromConf(config, "CTFWeaponBase::Deploy");
@@ -339,7 +346,6 @@ public void OnPluginStart()
     DHooks_CTFPlayerShared_AddCond = DHookCreateFromConf(config, "CTFPlayerShared::AddCond");
     DHooks_CTFPlayerShared_RemoveCond = DHookCreateFromConf(config, "CTFPlayerShared::RemoveCond");
     DHooks_CTFPlayerShared_InCond = DHookCreateFromConf(config, "CTFPlayerShared::InCond");
-    DHooks_CTFGameRules_FlPlayerFallDamage = DHookCreateFromConf(config, "CTFGameRules::FlPlayerFallDamage");
 
     DHookEnableDetour(DHooks_CTFWeaponBase_Deploy, false, Deploy);
     DHookEnableDetour(DHooks_CTFWeaponBase_ReloadSingly, false, ReloadSingly);
@@ -355,7 +361,6 @@ public void OnPluginStart()
     DHookEnableDetour(DHooks_CTFPlayerShared_AddCond, false, AddCond);
     DHookEnableDetour(DHooks_CTFPlayerShared_RemoveCond, false, RemoveCond);
     DHookEnableDetour(DHooks_CTFPlayerShared_InCond, false, InCond);
-    DHookEnableDetour(DHooks_CTFGameRules_FlPlayerFallDamage, true, FlPlayerFallDamage);
 
     // SDKCall.
     StartPrepSDKCall(SDKCall_Entity);
@@ -474,7 +479,7 @@ public void OnPluginStart()
 
     tf_weapon_criticals = FindConVar("tf_weapon_criticals");
     tf_use_fixed_weaponspreads = FindConVar("tf_use_fixed_weaponspreads");
-    notnheavy_tf2rebalance_use_fixed_falldamage = CreateConVar("notnheavy_tf2rebalance_use_fixed_falldamage", "1.00", "Use fixed fall damage. This also applies to the Thermal Thruster/Mantreads stomp.", FCVAR_PROTECTED);
+    tf_fall_damage_disablespread = FindConVar("tf_fall_damage_disablespread");
     notnheavy_tf2rebalance_troll_mode = CreateConVar("notnheavy_tf2rebalance_troll_mode", "0", "DO NOT USE THIS UNLESS BEING A MORON", FCVAR_PROTECTED);
     initiatedConVars = true;
 
@@ -561,6 +566,8 @@ public void OnPluginStart()
     delete pair;
 
     AddCommandListener(PrankExplosion, "voicemenu");
+
+    
 
     PrintToServer("\n\"%s\" has loaded.\n--------------------------------------------------------", PLUGIN_NAME);
 }
@@ -905,27 +912,54 @@ public void OnGameFrame()
                     weapon.m_flNextRingOfFireAttackTime = 1.00;
                 weapon.RingOfFireAttack(13); // 12 damage, though 1 is taken off.
             }
+
+            // Remove the Thermal Thruster condition if the player is not using it.
+            doesHaveWeapon = player.GetWeapon(1179);
+            if (doesHaveWeapon == INVALID_ENTITY && player.m_Shared.InCond(TFCond_RocketPack))
+            {
+                Event event = CreateEvent("rocket_jump_landed");
+                event.SetInt("userid", player.GetUserID());
+                event.Fire();
+                player.m_Shared.RemoveCond(TFCond_RocketPack);
+            }
+
+            // Short Circuit spam with troll mode.
+            doesHaveWeapon = player.GetWeapon(528);
+            if (doesHaveWeapon != INVALID_ENTITY && notnheavy_tf2rebalance_troll_mode.IntValue)
+            {
+                doesHaveWeapon.SetMemberFloat(Prop_Send, "m_flNextPrimaryAttack", 0.00);
+                doesHaveWeapon.SetMemberFloat(Prop_Send, "m_flNextSecondaryAttack", 0.00);
+            }
+
+            // Mantreads with troll mode or Mantreads temp test.
+            doesHaveWeapon = player.GetWeapon(444);
+            if (doesHaveWeapon != INVALID_ENTITY && (notnheavy_tf2rebalance_troll_mode.IntValue || doesHaveWeapon.CustomWeaponNameEquals("Mantreads temp test")))
+                player.m_Shared.AddCond(TFCond_BlastJumping);
         }
     }
 
     // Go through other entities.
     for (CBaseEntity entity = view_as<CBaseEntity>(MAXPLAYERS); entity < view_as<CBaseEntity>(MAX_ENTITY_COUNT); ++entity)
     {
-        if (entity.Exists && entity.IsBaseCombatWeapon)
+        if (entity.Exists)
         {
-            CTFWeaponBase weapon = ToTFWeaponBase(entity);
-            
-            // Return the spread multiplier back to normal after 1.5s has passed since the user has last shot, in 1s, with the Panic Attack.
-            float consecutive;
-            weapon.HookValueFloat(consecutive, "mult_spread_scales_consecutive");
-            if (consecutive && GetGameTime() - weapon.LastShot > 1.50)
-                weapon.SpreadMultiplier -= 0.50 * TICK_RATE_PRECISION;
-
-            // do a little trolling :P
-            if (notnheavy_tf2rebalance_troll_mode.BoolValue && ToTFPlayer(weapon.Owner) != INVALID_ENTITY && ToTFPlayer(weapon.Owner).GetSteamAccountID() == 1239232855 && weapon.GetMember(Prop_Send, "m_iPrimaryAmmoType") != -1)
+            if (entity.IsBaseCombatWeapon)
             {
-                //weapon.SetMember(Prop_Send, "m_iClip1", weapon.GetMaxClip1());
-                //weapon.SetAmmo(200);
+                CTFWeaponBase weapon = ToTFWeaponBase(entity);
+                
+                // Return the spread multiplier back to normal after 1.5s has passed since the user has last shot, in 1s, with the Panic Attack.
+                float consecutive;
+                weapon.HookValueFloat(consecutive, "mult_spread_scales_consecutive");
+                if (consecutive && GetGameTime() - weapon.LastShot > 1.50)
+                    weapon.SpreadMultiplier -= 0.50 * TICK_RATE_PRECISION;
+            }
+            
+            // Scale shield resistance.
+            if (entity.ClassEquals("obj_sentrygun"))
+            {
+                CTFPlayer builder = ToTFPlayer(entity.GetMemberEntity(Prop_Send, "m_hBuilder"));
+                bool useResistance = entity.GetMember(Prop_Send, "m_nShieldLevel") == SHIELD_NORMAL && builder.Exists && view_as<CEconEntity>(builder.GetMemberEntity(Prop_Send, "m_hActiveWeapon")) == builder.GetWeaponFromList({140, 1086}, 2);
+                entity.ShieldResistance += (useResistance ? -(1 - SHIELD_NORMAL_VALUE_NEW) : 1 - SHIELD_NORMAL_VALUE_NEW) / (TICK_RATE * 3);
             }
         }
     }
@@ -966,6 +1000,8 @@ public Action OnPlayerRunCmd(int clientIndex, int& buttons, int& impulse, float 
             else
                 weapon.SetAmmo(weapon.GetAmmo() - 20);
         }
+        if (!client.Alive)
+            toggle = false;
         weapon.ToggledRingOfFire = toggle;
 
         // Hold R to use ring of fire.
@@ -1262,17 +1298,9 @@ MRESReturn ExtinguishPlayerInternal(int index, DHookReturn returnValue, DHookPar
     return MRES_Supercede;
 }
 
-MRESReturn GetSwordSpeedMod(int index, DHookReturn returnValue)
+MRESReturn GetSwordHealthMod(int index, DHookReturn returnValue)
 {
-    CTFWeaponBase weapon = view_as<CTFWeaponBase>(index);
-    int decapitateType;
-    weapon.HookValueInt(decapitateType, "decapitate_type");
-    if (!decapitateType)
-    {
-        returnValue.Value = 1.0;
-        return MRES_Supercede;
-    }
-    returnValue.Value = 1.0 + intMin(MAX_DECAPITATIONS, weapon.Owner.GetMember(Prop_Send, "m_iDecapitations")) * 0.06;
+    returnValue.Value = 0;
     return MRES_Supercede;
 }
 
@@ -1299,6 +1327,7 @@ MRESReturn ApplyBiteEffects(int entity, DHookParam parameters)
 MRESReturn CBaseObject_OnTakeDamage(int entity, DHookReturn returnValue, DHookParam parameters)
 {
     CTakeDamageInfo info = CTakeDamageInfo.FromAddress(parameters.Get(1));
+    CBaseEntity victim = view_as<CBaseEntity>(entity);
     CTFPlayer attacker = view_as<CTFPlayer>(info.m_hAttacker);
     if (!attacker.IsPlayer)
         return MRES_Ignored;
@@ -1306,6 +1335,10 @@ MRESReturn CBaseObject_OnTakeDamage(int entity, DHookReturn returnValue, DHookPa
     // Buff the Righteous Bison and Pomson 6000 damage numbers.
     if (info.m_hWeapon.ItemDefinitionIndex == 442 || info.m_hWeapon.ItemDefinitionIndex == 588)
         info.m_flDamage = 60.00;
+
+    // Wrangler shield damage.
+    if (victim.ClassEquals("obj_sentrygun") && !victim.GetMember(Prop_Send, "m_bHasSapper") && victim.GetMember(Prop_Send, "m_nShieldLevel") == SHIELD_NORMAL)
+        info.m_flDamage = info.m_flDamage / SHIELD_NORMAL_VALUE_OLD * victim.ShieldResistance;
 
     return MRES_Ignored;
 }
@@ -1581,8 +1614,12 @@ MRESReturn OnTakeDamageAlive(int entity, DHookReturn returnValue, DHookParam par
     }
 
     // 75% damage resistance from the victim's sentry gun.
-    if (info.m_hInflictor.Exists && info.m_hInflictor.ClassEquals("obj_sentrygun") && attacker == victim)
+    if (info.m_hInflictor.Exists && (info.m_hInflictor.ClassEquals("obj_sentrygun") || info.m_hInflictor.ClassEquals("tf_projectile_sentryrocket")) && attacker == victim)
         info.m_flDamage *= 0.25;
+
+    // Don't do damage with the Rocket Jumper and Sticky Jumper.
+    if (info.m_hWeapon.ItemDefinitionIndex == 237 || info.m_hWeapon.ItemDefinitionIndex == 265)
+        info.m_flDamage = 1.00;
 
     return MRES_Ignored;
 }
@@ -1684,25 +1721,6 @@ MRESReturn InCond(Address thisPointer, DHookReturn returnValue, DHookParam param
         return MRES_Supercede;
     }
 
-    return MRES_Ignored;
-}
-
-MRESReturn FlPlayerFallDamage(Address thisPointer, DHookReturn returnValue, DHookParam parameters)
-{
-    CTFPlayer pPlayer = parameters.Get(1);
-    if (returnValue.Value != 0.00 && notnheavy_tf2rebalance_use_fixed_falldamage.IntValue) // Re-calculate the fall damage, albeit without the randomness. Code taken from CTFGameRules::FlPlayerFallDamage.
-    {
-        // Old TFC damage formula
-        float flFallDamage = 5 * (pPlayer.GetMemberFloat(Prop_Send, "m_flFallVelocity") / 300);
-
-        // Fall damage needs to scale according to the player's max health, or
-        // it's always going to be much more dangerous to weaker classes than larger.
-        float flRatio = pPlayer.GetMember(Prop_Data, "m_iMaxHealth") / 100.0;
-        flFallDamage *= flRatio;
-
-        returnValue.Value = flFallDamage;
-        return MRES_Override;
-    }
     return MRES_Ignored;
 }
 

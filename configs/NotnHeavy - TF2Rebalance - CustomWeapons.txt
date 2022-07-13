@@ -22,6 +22,20 @@
         "class"  "8 9" // Spy, Engineer
         "slot"   "2"   // Melee
     }
+    "327"
+    {
+        "object" "tf_weapon_sword"
+        "name"   "Claidheamh Mòr Test 1"
+        "class"  "4" // Demoman
+        "slot"   "2" // Melee
+    }
+    "444"
+    {
+        "object" "tf_wearable"
+        "name"   "Mantreads temp test"
+        "class"  "3"
+        "slot"   "1"
+    }
     "880"
     {
         "object" "saxxy"

@@ -6,6 +6,7 @@
 #pragma newdecls required
 
 #define NULL_CUSTOM_WEAPON view_as<CustomWeapon>(0)
+#define CLASSES 9
 
 //////////////////////////////////////////////////////////////////////////////
 // CUSTOMWEAPON DATA                                                        //

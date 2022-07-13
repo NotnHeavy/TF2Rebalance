@@ -116,6 +116,11 @@ methodmap CTFWeaponBase < CEconEntity
                     this.setAttribute("fire rate bonus", 0.01);
                 }
             }
+            case 237: // Rocket Jumper.
+            {
+                this.setAttribute("damage penalty", 1.00);
+                this.setAttribute("damage blast push", 500.00);
+            }
             case 414: // Liberty Launcher.
             {
                 // Remove old attributes.
@@ -242,13 +247,25 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("Reload time increased", 1.25); // +25% slower reload time
                 this.setAttribute("mod mini-crit airborne", 1.00); // Mini-crits targets launched airborne by explosions, grapple hooks or rocket packs
             }
+
+            // Demoman secondary.
+            case 265: // Sticky Jumper.
+            {
+                this.setAttribute("damage penalty", 1.00);
+                this.setAttribute("damage blast push", 500.00);
+
+                // Troll mode.
+                if (notnheavy_tf2rebalance_troll_mode.BoolValue)
+                {
+                    this.setAttribute("max pipebombs decreased", 0.00);
+                    this.setAttribute("max pipebombs increased", 100000000.00);
+                    this.setAttribute("clip size bonus", 100000000.00);
+                    this.setAttribute("stickybomb charge rate", 0.00);
+                    this.setAttribute("fire rate bonus", 0.01);
+                }
+            }
             
             // Demoman melee.
-            case 132, 266, 482, 1082: // Eyelander, Horseless Headless Horsemann's Headtaker and Nessie's Nine Iron.
-            {
-                // Apply new attributes.
-                this.setAttribute("maxammo secondary reduced", 0.20); // -80% max secondary ammo on wearer
-            }
             case 172: // Scotsman's Skullcutter.
             {
                 // Troll mode.
@@ -269,7 +286,14 @@ methodmap CTFWeaponBase < CEconEntity
             case 327: // Claidheamh Mòr.
             {
                 // Apply new attributes.
-                this.setAttribute("heal on kill", 15.00); // +15 health restored on kill
+                if (this.CustomWeaponNameEquals("Claidheamh Mòr Test 1"))
+                {
+                    this.setAttribute("mult charge turn control", 2.00); // +200% increase in turning control while charging
+                    this.setAttribute("kill refills meter", 0.00); // Melee kills refill 0% of your charge meter
+                }
+                else
+                    this.setAttribute("heal on kill", 15.00); // +15 health restored on kill
+                
             }
 
             // Heavy primary.
@@ -358,6 +382,17 @@ methodmap CTFWeaponBase < CEconEntity
                 // Remove old attributes.
                 this.setAttribute("subtract victim medigun charge on hit", 0.00);
                 this.setAttribute("subtract victim cloak on hit", 0.00);
+            }
+
+            // Engineer secondary.
+            case 528: // Short Circuit troll mode.
+            {
+                if (notnheavy_tf2rebalance_troll_mode.BoolValue)
+                {
+                    this.setAttribute("fire rate bonus", 0.01);
+                    this.setAttribute("Reload time decreased", 0.001);
+                    this.setAttribute("maxammo metal increased", 100000.00);
+                }
             }
 
             // Spy primary.

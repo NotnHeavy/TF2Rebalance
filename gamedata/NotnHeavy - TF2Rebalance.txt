@@ -110,10 +110,10 @@
 				"linux"   "1704"
 			}
 			
-			"CTFSword::GetSwordSpeedMod"
+			"CTFSword::GetSwordHealthMod"
 			{
-				"windows" "480"
-				"linux"   "488"
+				"windows" "481"
+				"linux"   "489"
 			}
 
 			"CTFMinigun::m_flNextRingOfFireAttackTime"
@@ -416,12 +416,12 @@
 					}
 				}
 			}
-			"CTFSword::GetSwordSpeedMod"
+			"CTFSword::GetSwordHealthMod"
 			{
-				"offset"   "CTFSword::GetSwordSpeedMod"
+				"offset"   "CTFSword::GetSwordHealthMod"
 				"hooktype" "entity"
 				"this"     "entity"
-				"return"   "float"
+				"return"   "int"
 			}
 			"CTFProjectile_Jar::Explode"
 			{

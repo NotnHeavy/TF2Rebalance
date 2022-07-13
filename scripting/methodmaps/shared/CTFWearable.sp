@@ -32,6 +32,20 @@ methodmap CTFWearable < CEconEntity
             {
                 // Apply new attributes.
                 this.setAttribute("rocket jump damage reduction", 0.75); // -25% blast damage from rocket jumps
+
+                // Troll mode.
+                if (notnheavy_tf2rebalance_troll_mode.BoolValue)
+                {
+                    this.setAttribute("rocket jump damage reduction", 0.01);
+                    this.setAttribute("mod_air_control_blast_jump", 1000.00);
+                }
+
+                // Temp test
+                if (this.CustomWeaponNameEquals("Mantreads temp test"))
+                {
+                    this.setAttribute("maxammo primary reduced", 0.00);
+                    this.setAttribute("mod_air_control_blast_jump", 1000.00);
+                }
             }
 
             // Demoman primary.
@@ -42,7 +56,7 @@ methodmap CTFWearable < CEconEntity
             }
 
             // Demoman secondary.
-            case 131: // chargin' targe troll mode
+            case 131: // Chargin' Targe troll mode.
             {
                 if (notnheavy_tf2rebalance_troll_mode.BoolValue)
                 {
@@ -54,7 +68,7 @@ methodmap CTFWearable < CEconEntity
             }
 
             // Multiclass weapons.
-            case 133: // gunboats troll mode
+            case 133: // Gunboats troll mode.
             {
                 if (notnheavy_tf2rebalance_troll_mode.BoolValue)
                     this.setAttribute("rocket jump damage reduction", 0.01);
