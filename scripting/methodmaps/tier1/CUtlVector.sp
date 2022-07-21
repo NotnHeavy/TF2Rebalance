@@ -30,7 +30,7 @@ methodmap CUtlVector
     // Constructor.
     public CUtlVector(Address address)
     {
-        return view_as<Address>(address);
+        return view_as<CUtlVector>(address);
     }
     property Address Address
     {

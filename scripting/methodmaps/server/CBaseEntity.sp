@@ -22,7 +22,7 @@ enum struct cbaseentityData
 // PUBLIC                                                                   //
 //////////////////////////////////////////////////////////////////////////////
 
-    CBaseEntity owner;
+    int owner;
     Vector spawnPosition;
     char class[MAX_NAME_LENGTH];
     float timestamp;
@@ -103,8 +103,8 @@ methodmap CBaseEntity
     {
         public get()
         {
-            if (cbaseentities[this].owner) // Stored owner from the weapon structurising list.
-                return cbaseentities[this].owner;
+            if (cbaseentities[this.Index].owner) // Stored owner from the weapon structurising list.
+                return view_as<CBaseEntity>(cbaseentities[this.Index].owner);
             if (this.HasMember(Prop_Send, "m_hOwnerEntity")) // Grab from m_hOwnerEntity. In most case scenarios this will be the value returned.
             {
                 CBaseEntity player = this.GetMemberEntity(Prop_Send, "m_hOwnerEntity");
@@ -122,76 +122,76 @@ methodmap CBaseEntity
             }
             return INVALID_ENTITY;
         }
-        public set(CBaseEntity entity) { cbaseentities[this].owner = entity; }
+        public set(CBaseEntity entity) { cbaseentities[this.Index].owner = view_as<int>(entity); }
     }
     property Vector SpawnPosition
     {
-        public get() { return cbaseentities[this].spawnPosition; }
-        public set(Vector value) { cbaseentities[this].spawnPosition = value; }
+        public get() { return cbaseentities[this.Index].spawnPosition; }
+        public set(Vector value) { cbaseentities[this.Index].spawnPosition = value; }
     }
     property float Timestamp
     {
-        public get() { return cbaseentities[this].timestamp; }
+        public get() { return cbaseentities[this.Index].timestamp; }
     }
     property float RechargeTime
     {
-        public get() { return cbaseentities[this].rechargeTime; }
-        public set(float value) { cbaseentities[this].rechargeTime = value; }
+        public get() { return cbaseentities[this.Index].rechargeTime; }
+        public set(float value) { cbaseentities[this.Index].rechargeTime = value; }
     }
     property float LastHolsterTime
     {
-        public get() { return cbaseentities[this].lastHolsterTime; }
-        public set(float value) { cbaseentities[this].lastHolsterTime = value; }
+        public get() { return cbaseentities[this.Index].lastHolsterTime; }
+        public set(float value) { cbaseentities[this.Index].lastHolsterTime = value; }
     }
     property float SpreadMultiplier
     {
-        public get() { return cbaseentities[this].spreadMultiplier; }
-        public set(float value) { cbaseentities[this].spreadMultiplier = clamp(value, 1.00, 1.50); }
+        public get() { return cbaseentities[this.Index].spreadMultiplier; }
+        public set(float value) { cbaseentities[this.Index].spreadMultiplier = clamp(value, 1.00, 1.50); }
     }
     property float LastShot
     {
-        public get() { return cbaseentities[this].lastShot; }
-        public set(float value) { cbaseentities[this].lastShot = value; }
+        public get() { return cbaseentities[this.Index].lastShot; }
+        public set(float value) { cbaseentities[this.Index].lastShot = value; }
     }
     property bool ToggledRingOfFire
     {
-        public get() { return cbaseentities[this].toggledRingOfFire; }
-        public set(bool toggle) { cbaseentities[this].toggledRingOfFire = toggle; }
+        public get() { return cbaseentities[this.Index].toggledRingOfFire; }
+        public set(bool toggle) { cbaseentities[this.Index].toggledRingOfFire = toggle; }
     }
     property bool HoldingReload
     {
-        public get() { return cbaseentities[this].holdingReload; }
-        public set(bool toggle) { cbaseentities[this].holdingReload = toggle; }
+        public get() { return cbaseentities[this.Index].holdingReload; }
+        public set(bool toggle) { cbaseentities[this.Index].holdingReload = toggle; }
     }
     property float ShieldResistance
     {
-        public get() { return cbaseentities[this].shieldResistance; }
-        public set(float value) { cbaseentities[this].shieldResistance = clamp(value, SHIELD_NORMAL_VALUE_NEW, 1.00); }
+        public get() { return cbaseentities[this.Index].shieldResistance; }
+        public set(float value) { cbaseentities[this.Index].shieldResistance = clamp(value, SHIELD_NORMAL_VALUE_NEW, 1.00); }
     }
 
     // Public properties - buffers.
     public void GetCustomWeaponName(char[] buffer, int length)
     {
-        strcopy(buffer, length, cbaseentities[this].customWeaponName);
+        strcopy(buffer, length, cbaseentities[this.Index].customWeaponName);
     }
     public void SetCustomWeaponName(char[] buffer)
     {
-        strcopy(cbaseentities[this].customWeaponName, sizeof(cbaseentities[].customWeaponName), buffer);
+        strcopy(cbaseentities[this.Index].customWeaponName, sizeof(cbaseentities[].customWeaponName), buffer);
     }
 
     // Public methods.
     // Returns -1 on failure, character index representing starting point of substring on success.
     public int ClassContains(char[] other)
     {
-        return StrContains(cbaseentities[this].class, other);
+        return StrContains(cbaseentities[this.Index].class, other);
     }
     public bool ClassEquals(char[] other)
     {
-        return StrEqual(cbaseentities[this].class, other);
+        return StrEqual(cbaseentities[this.Index].class, other);
     }
     public bool CustomWeaponNameEquals(char[] other)
     {
-        return StrEqual(cbaseentities[this].customWeaponName, other);
+        return StrEqual(cbaseentities[this.Index].customWeaponName, other);
     }
     public Vector GetAbsOrigin(bool center = true, bool global = true)
     {

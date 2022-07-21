@@ -9,19 +9,19 @@
 // HEALERS_T DATA                                                           //
 //////////////////////////////////////////////////////////////////////////////
 
-enum healers_tOffsets (+= 0x04)
+enum healers_tOffsets
 {
     pHealer = 0,
-    flAmount,
-    flHealAccum,
-    flOverhealBonus,
-    flOverhealDecayMult,
-    bDispenserHeal,
-    pHealScorer,
-    iKillsWhileBeingHealed,
-    flHealedLastSecond,
+    flAmount = 4,
+    flHealAccum = 8,
+    flOverhealBonus = 12,
+    flOverhealDecayMult = 16,
+    bDispenserHeal = 20,
+    pHealScorer = 24,
+    iKillsWhileBeingHealed = 28,
+    flHealedLastSecond = 32,
 
-    healers_tSize
+    healers_tSize = 36
 }
 
 //////////////////////////////////////////////////////////////////////////////

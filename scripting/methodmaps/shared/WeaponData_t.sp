@@ -9,26 +9,26 @@
 // WEAPONDATA_T DATA                                                        //
 //////////////////////////////////////////////////////////////////////////////
 
-enum weapondata_tOffsets (+= 0x04)
+enum weapondata_tOffsets
 {
     nDamage = 0,
-    nBulletsPerShot,
-    flRange,
-	flSpread,
-	flPunchAngle,
-	flTimeFireDelay,   // Time to delay between firing
-	flTimeIdle,		   // Time to idle after firing
-	flTimeIdleEmpty,   // Time to idle after firing last bullet in clip
-	flTimeReloadStart, // Time to start into a reload (ie. shotgun)
-	flTimeReload,	   // Time to reload
-	bDrawCrosshair,	   // Should the weapon draw a crosshair
-	iProjectile,	   // The type of projectile this mode fires
-	iAmmoPerShot,      // How much ammo each shot consumes
-	flProjectileSpeed, // Start speed for projectiles (nail, etc.), NOTE: union with something non-projectile
-	flSmackDelay,	   // how long after swing should damage happen for melee weapons
-	bUseRapidFireCrits,
+    nBulletsPerShot = 4,
+    flRange = 8,
+	flSpread = 12,
+	flPunchAngle = 16,
+	flTimeFireDelay = 18,   // Time to delay between firing
+	flTimeIdle = 24,		// Time to idle after firing
+	flTimeIdleEmpty = 28,   // Time to idle after firing last bullet in clip
+	flTimeReloadStart = 32, // Time to start into a reload (ie. shotgun)
+	flTimeReload = 36,	    // Time to reload
+	bDrawCrosshair = 40,	// Should the weapon draw a crosshair
+	iProjectile = 44,	    // The type of projectile this mode fires
+	iAmmoPerShot = 48,      // How much ammo each shot consumes
+	flProjectileSpeed = 52, // Start speed for projectiles (nail, etc.), NOTE: union with something non-projectile
+	flSmackDelay = 56,	    // how long after swing should damage happen for melee weapons
+	bUseRapidFireCrits = 60,
 
-    weapondata_tSize
+    weapondata_tSize = 64
 }
 
 //////////////////////////////////////////////////////////////////////////////

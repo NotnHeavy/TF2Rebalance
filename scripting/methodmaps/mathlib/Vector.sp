@@ -145,7 +145,7 @@ methodmap Vector
     }
 
     // Vector functions.
-    public void GetBuffer(float[3] buffer)
+    public void GetBuffer(float buffer[3])
     {
         if (this.Global)
         {
@@ -156,7 +156,7 @@ methodmap Vector
         }
         vectorCollection.GetArray(this.Index, buffer, 3);
     }
-    public void SetBuffer(float[3] buffer)
+    public void SetBuffer(float buffer[3])
     {
         if (this.Global)
         {
@@ -292,7 +292,7 @@ stock void VectorVectors(Vector vector, Vector right = INVALID_VECTOR, Vector up
     if (up != INVALID_VECTOR)
         up.GetBuffer(upBuffer);
     
-    GetVectorVectors(buffer, rightBuffer, upBuffer);
+    GetVectorVectors(forwardBuffer, rightBuffer, upBuffer);
     
     vector.SetBuffer(forwardBuffer);
     if (right != INVALID_VECTOR)

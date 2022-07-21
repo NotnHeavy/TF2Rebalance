@@ -39,13 +39,6 @@ methodmap CTFWearable < CEconEntity
                     this.setAttribute("rocket jump damage reduction", 0.01);
                     this.setAttribute("mod_air_control_blast_jump", 1000.00);
                 }
-
-                // Temp test
-                if (this.CustomWeaponNameEquals("Mantreads temp test"))
-                {
-                    this.setAttribute("maxammo primary reduced", 0.00);
-                    this.setAttribute("mod_air_control_blast_jump", 1000.00);
-                }
             }
 
             // Demoman primary.

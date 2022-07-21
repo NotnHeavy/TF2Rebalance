@@ -304,8 +304,6 @@ public Plugin myinfo =
 // INITIALISATION                                                           //
 //////////////////////////////////////////////////////////////////////////////
 
-
-
 public void OnPluginStart()
 {
     LoadTranslations("common.phrases");
@@ -931,9 +929,9 @@ public void OnGameFrame()
                 doesHaveWeapon.SetMemberFloat(Prop_Send, "m_flNextSecondaryAttack", 0.00);
             }
 
-            // Mantreads with troll mode or Mantreads temp test.
+            // Mantreads with troll mode.
             doesHaveWeapon = player.GetWeapon(444);
-            if (doesHaveWeapon != INVALID_ENTITY && (notnheavy_tf2rebalance_troll_mode.IntValue || doesHaveWeapon.CustomWeaponNameEquals("Mantreads temp test")))
+            if (doesHaveWeapon != INVALID_ENTITY)
                 player.m_Shared.AddCond(TFCond_BlastJumping);
         }
     }
@@ -1021,6 +1019,8 @@ public Action OnPlayerRunCmd(int clientIndex, int& buttons, int& impulse, float 
         weapon.ToggledRingOfFire = toggle;
         */
     }
+
+    return Plugin_Continue;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1107,6 +1107,7 @@ MRESReturn VPhysicsCollision(int entity, DHookParam parameters)
                 self.Detonate();
         }
     }
+    return MRES_Ignored;
 }
 
 MRESReturn DispenseAmmo(int entity, DHookReturn returnValue, DHookParam parameters)
@@ -1322,6 +1323,7 @@ MRESReturn ApplyBiteEffects(int entity, DHookParam parameters)
     CTFWeaponBase weapon = view_as<CTFWeaponBase>(entity);
     if (weapon.ItemDefinitionIndex == 311)
         ToTFPlayer(weapon.Owner).AddCustomAttribute("airblast vulnerability multiplier", 0.50, 16.00);
+    return MRES_Ignored;
 }
 
 MRESReturn CBaseObject_OnTakeDamage(int entity, DHookReturn returnValue, DHookParam parameters)
@@ -1616,10 +1618,6 @@ MRESReturn OnTakeDamageAlive(int entity, DHookReturn returnValue, DHookParam par
     // 75% damage resistance from the victim's sentry gun.
     if (info.m_hInflictor.Exists && (info.m_hInflictor.ClassEquals("obj_sentrygun") || info.m_hInflictor.ClassEquals("tf_projectile_sentryrocket")) && attacker == victim)
         info.m_flDamage *= 0.25;
-
-    // Don't do damage with the Rocket Jumper and Sticky Jumper.
-    if (info.m_hWeapon.ItemDefinitionIndex == 237 || info.m_hWeapon.ItemDefinitionIndex == 265)
-        info.m_flDamage = 1.00;
 
     return MRES_Ignored;
 }

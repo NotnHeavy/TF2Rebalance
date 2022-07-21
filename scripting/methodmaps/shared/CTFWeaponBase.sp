@@ -116,11 +116,6 @@ methodmap CTFWeaponBase < CEconEntity
                     this.setAttribute("fire rate bonus", 0.01);
                 }
             }
-            case 237: // Rocket Jumper.
-            {
-                this.setAttribute("damage penalty", 1.00);
-                this.setAttribute("damage blast push", 500.00);
-            }
             case 414: // Liberty Launcher.
             {
                 // Remove old attributes.
@@ -246,23 +241,6 @@ methodmap CTFWeaponBase < CEconEntity
                 this.setAttribute("clip size penalty", 0.50); // -50% clip size
                 this.setAttribute("Reload time increased", 1.25); // +25% slower reload time
                 this.setAttribute("mod mini-crit airborne", 1.00); // Mini-crits targets launched airborne by explosions, grapple hooks or rocket packs
-            }
-
-            // Demoman secondary.
-            case 265: // Sticky Jumper.
-            {
-                this.setAttribute("damage penalty", 1.00);
-                this.setAttribute("damage blast push", 500.00);
-
-                // Troll mode.
-                if (notnheavy_tf2rebalance_troll_mode.BoolValue)
-                {
-                    this.setAttribute("max pipebombs decreased", 0.00);
-                    this.setAttribute("max pipebombs increased", 100000000.00);
-                    this.setAttribute("clip size bonus", 100000000.00);
-                    this.setAttribute("stickybomb charge rate", 0.00);
-                    this.setAttribute("fire rate bonus", 0.01);
-                }
             }
             
             // Demoman melee.

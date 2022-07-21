@@ -9,12 +9,12 @@
 // CUTLMEMORY DATA                                                          //
 //////////////////////////////////////////////////////////////////////////////
 
-enum cutlmemoryOffsets (+= 0x04)
+enum cutlmemoryOffsets
 {
     pMemory = 0,
-    nAllocationCount,
-    nGrowSize,
-    cutlmemorySize
+    nAllocationCount = 4,
+    nGrowSize = 8,
+    cutlmemorySize = 16
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@ methodmap CUtlMemory
     // Constructor.
     public CUtlMemory(Address address)
     {
-        return view_as<Address>(address);
+        return view_as<CUtlMemory>(address);
     }
     property Address Address
     {

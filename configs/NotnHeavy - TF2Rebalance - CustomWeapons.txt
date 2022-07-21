@@ -29,13 +29,6 @@
         "class"  "4" // Demoman
         "slot"   "2" // Melee
     }
-    "444"
-    {
-        "object" "tf_wearable"
-        "name"   "Mantreads temp test"
-        "class"  "3"
-        "slot"   "1"
-    }
     "880"
     {
         "object" "saxxy"

@@ -154,103 +154,103 @@ methodmap CTFPlayer < CBaseEntity
     // Public properties.
     property int EquipMenuSlotChosen
     {
-        public get() { return ctfplayers[this].equipMenuSlotChosen; }
-        public set(int value) { ctfplayers[this].equipMenuSlotChosen = value; }
+        public get() { return ctfplayers[this.Index].equipMenuSlotChosen; }
+        public set(int value) { ctfplayers[this.Index].equipMenuSlotChosen = value; }
     }
     property float TimeSinceSwitchFromNoAmmoWeapon
     {
-        public get() { return ctfplayers[this].timeSinceSwitchFromNoAmmoWeapon; }
-        public set(float value) { ctfplayers[this].timeSinceSwitchFromNoAmmoWeapon = value; }
+        public get() { return ctfplayers[this.Index].timeSinceSwitchFromNoAmmoWeapon; }
+        public set(float value) { ctfplayers[this.Index].timeSinceSwitchFromNoAmmoWeapon = value; }
     }
     property CTFWeaponBase LastWeaponWithSlowHolster
     {
-        public get() { return ctfplayers[this].lastWeaponWithSlowHolster; }
-        public set(CTFWeaponBase value) { ctfplayers[this].lastWeaponWithSlowHolster = value; }
+        public get() { return ctfplayers[this.Index].lastWeaponWithSlowHolster; }
+        public set(CTFWeaponBase value) { ctfplayers[this.Index].lastWeaponWithSlowHolster = value; }
     }
     property CBaseEntity LastProjectileEncountered
     {
-        public get() { return ctfplayers[this].lastProjectileEncountered; }
-        public set(CBaseEntity value) { ctfplayers[this].lastProjectileEncountered = value; }
+        public get() { return ctfplayers[this.Index].lastProjectileEncountered; }
+        public set(CBaseEntity value) { ctfplayers[this.Index].lastProjectileEncountered = value; }
     }
     property float TimeSinceLastProjectileEncounter
     {
-        public get() { return ctfplayers[this].timeSinceLastProjectileEncounter; }
-        public set(float value) { ctfplayers[this].timeSinceLastProjectileEncounter = value; }
+        public get() { return ctfplayers[this.Index].timeSinceLastProjectileEncounter; }
+        public set(float value) { ctfplayers[this.Index].timeSinceLastProjectileEncounter = value; }
     }
     property float TimeUntilSandmanStunEnd
     {
-        public get() { return ctfplayers[this].timeUntilSandmanStunEnd; }
-        public set(float value) { ctfplayers[this].timeUntilSandmanStunEnd = value; }
+        public get() { return ctfplayers[this.Index].timeUntilSandmanStunEnd; }
+        public set(float value) { ctfplayers[this.Index].timeUntilSandmanStunEnd = value; }
     }
     property float FlameDensity
     {
-        public get() { return ctfplayers[this].flameDensity; }
-        public set(float value) { ctfplayers[this].flameDensity = clamp(value, 0.50, 1.00); }
+        public get() { return ctfplayers[this.Index].flameDensity; }
+        public set(float value) { ctfplayers[this.Index].flameDensity = clamp(value, 0.50, 1.00); }
     }
     property float TimeSinceHitByFlames
     {
-        public get() { return ctfplayers[this].timeSinceHitByFlames; }
-        public set(float value) { ctfplayers[this].timeSinceHitByFlames = value; }
+        public get() { return ctfplayers[this.Index].timeSinceHitByFlames; }
+        public set(float value) { ctfplayers[this.Index].timeSinceHitByFlames = value; }
     }
     property bool OnFire
     {
-        public get() { return ctfplayers[this].onFire; }
-        public set(bool toggle) { ctfplayers[this].onFire = toggle; }
+        public get() { return ctfplayers[this.Index].onFire; }
+        public set(bool toggle) { ctfplayers[this.Index].onFire = toggle; }
     }
     property bool FromDegreaser
     {
-        public get() { return ctfplayers[this].fromDegreaser; }
-        public set(bool toggle) { ctfplayers[this].fromDegreaser = toggle; }
+        public get() { return ctfplayers[this.Index].fromDegreaser; }
+        public set(bool toggle) { ctfplayers[this.Index].fromDegreaser = toggle; }
     }
     property CBaseEntity OriginalBurner
     {
-        public get() { return ctfplayers[this].originalBurner; }
-        public set(CBaseEntity value) { ctfplayers[this].originalBurner = value; }
+        public get() { return ctfplayers[this.Index].originalBurner; }
+        public set(CBaseEntity value) { ctfplayers[this.Index].originalBurner = value; }
     }
     property int RevengeCrits
     {
-        public get() { return ctfplayers[this].revengeCrits; }
-        public set(int value) { ctfplayers[this].revengeCrits = value; }
+        public get() { return ctfplayers[this.Index].revengeCrits; }
+        public set(int value) { ctfplayers[this.Index].revengeCrits = value; }
     }
     property float TimeSinceStoppedBurning
     {
-        public get() { return ctfplayers[this].timeSinceStoppedBurning; }
-        public set(float value) { ctfplayers[this].timeSinceStoppedBurning = value; }
+        public get() { return ctfplayers[this.Index].timeSinceStoppedBurning; }
+        public set(float value) { ctfplayers[this.Index].timeSinceStoppedBurning = value; }
     }
     property CTFWeaponBase FromSVF
     {
-        public get() { return ctfplayers[this].fromSVF; }
-        public set(CTFWeaponBase value) { ctfplayers[this].fromSVF = value; }
+        public get() { return ctfplayers[this.Index].fromSVF; }
+        public set(CTFWeaponBase value) { ctfplayers[this.Index].fromSVF = value; }
     }
     property bool FromGasPasser
     {
-        public get() { return ctfplayers[this].fromGasPasser; }
-        public set(bool toggle) { ctfplayers[this].fromGasPasser = toggle; }
+        public get() { return ctfplayers[this.Index].fromGasPasser; }
+        public set(bool toggle) { ctfplayers[this.Index].fromGasPasser = toggle; }
     }
     property Pointer ConnectedInfo
     {
-        public get() { return ctfplayers[this].connectedInfo; }
-        public set(Pointer value) { ctfplayers[this].connectedInfo = value; }
+        public get() { return ctfplayers[this.Index].connectedInfo; }
+        public set(Pointer value) { ctfplayers[this.Index].connectedInfo = value; }
     }
     property int RecursiveCheck
     {
-        public get() { return ctfplayers[this].recursiveCheck; }
-        public set(int toggle) { ctfplayers[this].recursiveCheck = toggle; }
+        public get() { return ctfplayers[this.Index].recursiveCheck; }
+        public set(int toggle) { ctfplayers[this.Index].recursiveCheck = toggle; }
     }
     property bool TakingMiniCritDamage
     {
-        public get() { return ctfplayers[this].takingMiniCritDamage; }
-        public set(bool toggle) { ctfplayers[this].takingMiniCritDamage = toggle; }
+        public get() { return ctfplayers[this.Index].takingMiniCritDamage; }
+        public set(bool toggle) { ctfplayers[this.Index].takingMiniCritDamage = toggle; }
     }
     property float TimeUntilNoPounceCrits
     {
-        public get() { return ctfplayers[this].timeUntilNoPounceCrits; }
-        public set(float value) { ctfplayers[this].timeUntilNoPounceCrits = value; }
+        public get() { return ctfplayers[this.Index].timeUntilNoPounceCrits; }
+        public set(float value) { ctfplayers[this.Index].timeUntilNoPounceCrits = value; }
     }
     property float ExpiryTimeOfSpeedBoost
     {
-        public get() { return ctfplayers[this].expiryTimeOfSpeedBoost; }
-        public set(float value) { ctfplayers[this].expiryTimeOfSpeedBoost = value; }
+        public get() { return ctfplayers[this.Index].expiryTimeOfSpeedBoost; }
+        public set(float value) { ctfplayers[this.Index].expiryTimeOfSpeedBoost = value; }
     }
 
     // Property wrappers.
@@ -277,9 +277,9 @@ methodmap CTFPlayer < CBaseEntity
         weapon.Owner = this;
         for (int i = 0; i < MAX_WEAPONS; ++i)
         {
-            if (ctfplayers[this].weapons[i] == INVALID_ENTITY)
+            if (ctfplayers[this.Index].weapons[i] == INVALID_ENTITY)
             {
-                ctfplayers[this].weapons[i] = weapon;
+                ctfplayers[this.Index].weapons[i] = weapon;
                 break;
             }
         }
@@ -311,7 +311,7 @@ methodmap CTFPlayer < CBaseEntity
         if (this == INVALID_ENTITY)
             return;
         for (int i = 0; i < MAX_WEAPONS; ++i)
-            ctfplayers[this].weapons[i] = view_as<CEconEntity>(INVALID_ENTITY);
+            ctfplayers[this.Index].weapons[i] = view_as<CEconEntity>(INVALID_ENTITY);
 
         // Iterate through weapons.
         for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Item2; ++i)
@@ -353,7 +353,7 @@ methodmap CTFPlayer < CBaseEntity
             return view_as<CEconEntity>(INVALID_ENTITY);
         for (int i = 0; i < MAX_WEAPONS; ++i)
         {
-            CEconEntity entity = ctfplayers[this].weapons[i];
+            CEconEntity entity = ctfplayers[this.Index].weapons[i];
             if (entity == INVALID_ENTITY)
                 break;
             if (entity.Exists && entity.ItemDefinitionIndex == itemDefinition)
@@ -368,7 +368,7 @@ methodmap CTFPlayer < CBaseEntity
             return view_as<CEconEntity>(INVALID_ENTITY);
         for (int i = 0; i < MAX_WEAPONS; ++i)
         {
-            CEconEntity entity = ctfplayers[this].weapons[i];
+            CEconEntity entity = ctfplayers[this.Index].weapons[i];
             if (entity == INVALID_ENTITY)
                 break;
             if (entity.Exists && entity.ClassEquals(className))
@@ -389,7 +389,7 @@ methodmap CTFPlayer < CBaseEntity
     }
     public void GetAllWeapons(CEconEntity weapons[MAX_WEAPONS])
     {
-        MemCopy(AddressOfArray(weapons), AddressOfArray(ctfplayers[this].weapons), sizeof(weapons));
+        MemCopy(AddressOfArray(weapons), AddressOfArray(ctfplayers[this.Index].weapons), sizeof(weapons));
     }
     public void Heal(int add, bool capOnEvent = false)
     {
@@ -414,16 +414,16 @@ methodmap CTFPlayer < CBaseEntity
     }
     public void ResetLoadoutLastEntry()
     {
-        ctfplayers[this].lastLoadoutEntry = "";
-        ctfplayers[this].savedID = 0;
+        ctfplayers[this.Index].lastLoadoutEntry = "";
+        ctfplayers[this.Index].savedID = 0;
     }
     public int CreateLoadoutPanel()
     {
         // Load the file with the keyvalues methodmap.
         KeyValues pair = new KeyValues("WeaponChanges");
         pair.ImportFromFile(configList);
-        if (ctfplayers[this].lastLoadoutEntry[0] != '\0')
-            pair.JumpToKey(ctfplayers[this].lastLoadoutEntry);
+        if (ctfplayers[this.Index].lastLoadoutEntry[0] != '\0')
+            pair.JumpToKey(ctfplayers[this.Index].lastLoadoutEntry);
         else if (!pair.GotoFirstSubKey())
         {
             delete pair;
@@ -467,7 +467,7 @@ methodmap CTFPlayer < CBaseEntity
                 }
                 if (found)
                 {
-                    strcopy(ctfplayers[this].lastLoadoutEntry, 256, buffer);
+                    strcopy(ctfplayers[this.Index].lastLoadoutEntry, 256, buffer);
                     foundNext = true;
                     break;
                 }
@@ -476,12 +476,12 @@ methodmap CTFPlayer < CBaseEntity
                     int count = 0;
                     do
                     {
-                        if (count < ctfplayers[this].savedID)
+                        if (count < ctfplayers[this.Index].savedID)
                         {
                             ++count;
                             continue;
                         }
-                        ctfplayers[this].savedID = 0;
+                        ctfplayers[this.Index].savedID = 0;
                         char key[256];
                         char value[256];
                         pair.GetSectionName(key, sizeof(key));
@@ -490,8 +490,8 @@ methodmap CTFPlayer < CBaseEntity
                         if (menu.TextRemaining - strlen(value) < 0)
                         {
                             foundNext = true;
-                            ctfplayers[this].savedID = count;
-                            strcopy(ctfplayers[this].lastLoadoutEntry, 256, buffer);
+                            ctfplayers[this.Index].savedID = count;
+                            strcopy(ctfplayers[this.Index].lastLoadoutEntry, 256, buffer);
                             break;
                         }
                         
@@ -539,9 +539,9 @@ methodmap CTFPlayer < CBaseEntity
     }
     public void ShowWelcomePanel()
     {
-        if (ctfplayers[this].shownWelcomeMenu)
+        if (ctfplayers[this.Index].shownWelcomeMenu)
             return;
-        ctfplayers[this].shownWelcomeMenu = true;
+        ctfplayers[this.Index].shownWelcomeMenu = true;
         char buffer[256];
 
         Panel menu = new Panel();
@@ -582,17 +582,9 @@ methodmap CTFPlayer < CBaseEntity
         
         for (int i = 0; i < MAX_WEAPONS; ++i)
         {
-            CTFWeaponBase entity = ToTFWeaponBase(ctfplayers[this].weapons[i]);
+            CTFWeaponBase entity = ToTFWeaponBase(ctfplayers[this.Index].weapons[i]);
             if (entity == view_as<CTFWeaponBase>(INVALID_ENTITY))
                 break;
-
-            // Check for Mantreads temp test.
-            CEconEntity wearable = this.GetWeapon(444);
-            if (wearable != INVALID_ENTITY && wearable.CustomWeaponNameEquals("Mantreads temp test"))
-            {
-                entity.SetMember(Prop_Send, "m_iClip1", 0);
-                continue;
-            }
             
             // Do not get max clip and start firing straight away with the Beggar's Bazooka.
             int auto_fires_full_clip = 0;
@@ -700,11 +692,11 @@ methodmap CTFPlayer < CBaseEntity
         {
             for (int v = 0; v < sizeof(customWeapons[][]); ++v)
             {
-                if (i == view_as<int>(this.Class) && customWeapons[this][i][v] != NULL_CUSTOM_WEAPON)
+                if (i == view_as<int>(this.Class) && customWeapons[this.Index][i][v] != NULL_CUSTOM_WEAPON)
                 {
                     //char objectName[256];
                     //customWeapons[this][i][v].GetObject(objectName);
-                    this.AllocateNewWeapon(customWeapons[this][i][v]); // objectName, customWeapons[this][i][v].ItemDefinitionIndex);
+                    this.AllocateNewWeapon(customWeapons[this.Index][i][v]); // objectName, customWeapons[this][i][v].ItemDefinitionIndex);
                 }
             }
         }
@@ -735,7 +727,7 @@ methodmap CTFPlayer < CBaseEntity
                     char index[256];
                     definition.GetName(name);
                     IntToString(definition.Index, index, sizeof(index));
-                    if (customWeapons[this][view_as<int>(this.Class)][definition.Slot] == definition)
+                    if (customWeapons[this.Index][view_as<int>(this.Class)][definition.Slot] == definition)
                         Format(name, sizeof(name), "(Equipped) %s", name);
                     menu.AddItem(index, name);
                 }
@@ -745,7 +737,7 @@ methodmap CTFPlayer < CBaseEntity
     }
     public void SetCustomWeapon(int slot, CustomWeapon definition)
     {
-        customWeapons[this][view_as<int>(this.Class)][slot] = definition;
+        customWeapons[this.Index][view_as<int>(this.Class)][slot] = definition;
     }
 
     // These would've been a part of another methodmap (IHasAttributes) but multiple inheritance is not a feature, at least as of SM 1.10.

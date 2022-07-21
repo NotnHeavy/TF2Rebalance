@@ -32,7 +32,7 @@ methodmap ModelInformation < Pointer
     // Create a new model record.
     public ModelInformation()
     {
-        return Pointer(view_as<int>(modelinformationsize));
+        return view_as<ModelInformation>(Pointer(view_as<int>(modelinformationsize)));
     }
 
     // ModelInformation members.

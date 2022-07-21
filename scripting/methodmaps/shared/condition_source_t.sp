@@ -9,14 +9,14 @@
 // CONDITION_SOURCE_T DATA                                                  //
 //////////////////////////////////////////////////////////////////////////////
 
-enum condition_source_tOffsets (+= 0x04)
+enum condition_source_tOffsets
 {
     nPreventedDamageFromCondition = 4,
-    flExpireTime,
-    pProvider,
-    bPrevActive,
+    flExpireTime = 8,
+    pProvider = 12,
+    bPrevActive = 16,
     
-    condition_source_tSize
+    condition_source_tSize = 20
 }
 
 //////////////////////////////////////////////////////////////////////////////

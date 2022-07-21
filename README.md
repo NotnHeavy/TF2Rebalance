@@ -1,3 +1,3 @@
 # TF2Rebalance
 
-To be worked on. This plugin is still in development phase and I just made it public for the sake of it.
+To be worked on. This plugin is still in development phase and I just made it public for the sake of it. This plugin uses SourceMod 1.11.
