@@ -2,26 +2,25 @@
 // MADE BY NOTNHEAVY. USES GPL-3, AS PER REQUEST OF SOURCEMOD               //
 //////////////////////////////////////////////////////////////////////////////
 
-// I'm just going to combine the functions for QAngles/Vectors into one methodmap.
+// This would've been a lot easier to do if I could actually overload operators with enum structs or at least return them from methodmaps.
+// Also I know this code isn't the best but I don't know what else to do.
+
+// Also I'm just going to combine the functions for QAngles/Vectors into one methodmap.
+
+// NOTE: I may rewrite this code, with the addition of the SM-Memory extension. This code was written before I included that extension.
 
 #pragma semicolon true
 #pragma newdecls required
 
 #define GLOBAL_VECTOR_SIZE 64
+#define INVALID_VECTOR view_as<Vector>(-GLOBAL_VECTOR_SIZE - 1)
 #define VECTOR_NULL view_as<Vector>(0)
 
 //////////////////////////////////////////////////////////////////////////////
 // VECTOR DATA                                                              //
 //////////////////////////////////////////////////////////////////////////////
 
-enum vectorOffsets
-{
-    VECTOR_OFFSET_X = 0,
-    VECTOR_OFFSET_Y = 4,
-    VECTOR_OFFSET_Z = 8,
-    VECTOR_SIZE = 12
-}
-
+static ArrayList vectorCollection;
 static int globalIndex = 0;
 static float globalVectors[GLOBAL_VECTOR_SIZE][3];
 
@@ -29,12 +28,18 @@ static float globalVectors[GLOBAL_VECTOR_SIZE][3];
 // VECTOR METHODMAP                                                         //
 //////////////////////////////////////////////////////////////////////////////
 
-methodmap Vector < Pointer
+methodmap Vector
 {
     // Create a new vector. Must be disposed via "Vector.Dispose()" when no longer used, unless marked as global.
     public Vector(float x = 0.00, float y = 0.00, float z = 0.00, bool global = false)
     {
-        float buffer[3];
+        if (vectorCollection == null)
+        {
+            vectorCollection = new ArrayList(4, -1);
+            vectorCollection.PushArray({0.00, 0.00, 0.00, 0.00}); // vec_origin
+        }
+
+        any buffer[4];
         buffer[0] = x;
         buffer[1] = y;
         buffer[2] = z;
@@ -43,55 +48,124 @@ methodmap Vector < Pointer
         {
             int index = globalIndex;
             globalIndex = globalIndex + 1 < GLOBAL_VECTOR_SIZE ? globalIndex + 1: 0;
-            memcpy(AddressOfArray(globalVectors[index]), AddressOfArray(buffer), VECTOR_SIZE);
-            return view_as<Vector>(index);
+            globalVectors[index][0] = buffer[0];
+            globalVectors[index][1] = buffer[1];
+            globalVectors[index][2] = buffer[2];
+            return view_as<Vector>(-index - 1);
         }
-        
-        Vector pointer = malloc(VECTOR_SIZE);
-        memcpy(pointer, AddressOfArray(buffer), VECTOR_SIZE);
-        return pointer;
+        buffer[3] = vectorCollection.PushArray(buffer);
+        vectorCollection.Set(buffer[3], buffer[3], 3);
+        return view_as<Vector>(buffer[3]);
+    }
+    property int Index
+    {
+        public get() { return view_as<int>(this); }
+    }
+    property bool Exists
+    {
+        public get() { return this.Index > -1 && this.Index < vectorCollection.Length && vectorCollection.Get(this.Index, 3) != INVALID_VECTOR; }
     }
     property bool Global
     {
-        public get() { return view_as<int>(this) < GLOBAL_VECTOR_SIZE; }
+        public get() { return this.Index < 0 && this.Index > -GLOBAL_VECTOR_SIZE - 1; }
     }
-    property Address Address
+    property int GlobalIndex
     {
-        public get() { return this.Global ? AddressOfArray(globalVectors[view_as<int>(this)]) : view_as<Address>(this); }
+        public get() { return -this.Index - 1; }
     }
 
-    // Dispose this vector.
+    // Dispose the vector from the internal array list.
     public void Dispose()
     {
-        if (!this.Global && this)
-            free(this);
+        if (vectorCollection == null || this.Index < 0 || this.Index + 1 > vectorCollection.Length)
+            return;
+        vectorCollection.Set(this.Index, INVALID_VECTOR, 3);
+        for (int i = vectorCollection.Length - 1; i > -1; --i)
+        {
+            if (vectorCollection.Get(i, 3) != INVALID_VECTOR)
+                break;
+            vectorCollection.Erase(i);
+        }
     }
 
     // Vector co-ordinates.
     property float X
     {
-        public get() { return Dereference(this.Address + view_as<Address>(VECTOR_OFFSET_X)); }
-        public set(float X) { WriteToValue(this.Address + view_as<Address>(VECTOR_OFFSET_X), X); }
+        public get()
+        {
+            if (this.Global)
+                return globalVectors[this.GlobalIndex][0];
+            return vectorCollection.Get(this.Index, 0);
+        }
+        public set(float X)
+        {
+            if (this.Global)
+            {
+                globalVectors[this.GlobalIndex][0] = X;
+                return;
+            }
+            vectorCollection.Set(this.Index, X, 0);
+        }
     }
     property float Y
     {
-        public get() { return Dereference(this.Address + view_as<Address>(VECTOR_OFFSET_Y)); }
-        public set(float X) { WriteToValue(this.Address + view_as<Address>(VECTOR_OFFSET_Y), X); }
+        public get()
+        {
+            if (this.Global)
+                return globalVectors[this.GlobalIndex][1];
+            return vectorCollection.Get(this.Index, 1);
+        }
+        public set(float Y)
+        {
+            if (this.Global)
+            {
+                globalVectors[this.GlobalIndex][1] = Y;
+                return;
+            }
+            vectorCollection.Set(this.Index, Y, 1);
+        }
     }
     property float Z
     {
-        public get() { return Dereference(this.Address + view_as<Address>(VECTOR_OFFSET_Z)); }
-        public set(float X) { WriteToValue(this.Address + view_as<Address>(VECTOR_OFFSET_Z), X); }
+        public get()
+        {
+            if (this.Global)
+                return globalVectors[this.GlobalIndex][2];
+            return vectorCollection.Get(this.Index, 2);
+        }
+        public set(float Z)
+        {
+            if (this.Global)
+            {
+                globalVectors[this.GlobalIndex][2] = Z;
+                return;
+            }
+            vectorCollection.Set(this.Index, Z, 2);
+        }
     }
 
     // Vector functions.
     public void GetBuffer(float buffer[3])
     {
-        memcpy(AddressOfArray(buffer), this.Address, VECTOR_SIZE);
+        if (this.Global)
+        {
+            buffer[0] = globalVectors[this.GlobalIndex][0];
+            buffer[1] = globalVectors[this.GlobalIndex][1];
+            buffer[2] = globalVectors[this.GlobalIndex][2];
+            return;
+        }
+        vectorCollection.GetArray(this.Index, buffer, 3);
     }
     public void SetBuffer(float buffer[3])
     {
-        memcpy(this.Address, AddressOfArray(buffer), VECTOR_SIZE);
+        if (this.Global)
+        {
+            globalVectors[this.GlobalIndex][0] = buffer[0];
+            globalVectors[this.GlobalIndex][1] = buffer[1];
+            globalVectors[this.GlobalIndex][2] = buffer[2];
+            return;
+        }
+        vectorCollection.SetArray(this.Index, buffer, 3);
     }
     public float Length(bool squared = false)
     {
@@ -206,28 +280,28 @@ stock Vector operator-(const Vector self)
 // PUBLIC METHODS                                                           //
 //////////////////////////////////////////////////////////////////////////////
 
-stock void VectorVectors(Vector vector, Vector right = VECTOR_NULL, Vector up = VECTOR_NULL)
+stock void VectorVectors(Vector vector, Vector right = INVALID_VECTOR, Vector up = INVALID_VECTOR)
 {
     float forwardBuffer[3];
     float rightBuffer[3];
     float upBuffer[3];
     
     vector.GetBuffer(forwardBuffer);
-    if (right)
+    if (right != INVALID_VECTOR)
         right.GetBuffer(rightBuffer);
-    if (up)
+    if (up != INVALID_VECTOR)
         up.GetBuffer(upBuffer);
     
     GetVectorVectors(forwardBuffer, rightBuffer, upBuffer);
     
     vector.SetBuffer(forwardBuffer);
-    if (right)
+    if (right != INVALID_VECTOR)
         right.SetBuffer(rightBuffer);
-    if (up)
+    if (up != INVALID_VECTOR)
         up.SetBuffer(upBuffer);
 }
 
-stock void AngleVectors(Vector angles, Vector forwardVector, Vector right = VECTOR_NULL, Vector up = VECTOR_NULL)
+stock void AngleVectors(Vector angles, Vector forwardVector, Vector right = INVALID_VECTOR, Vector up = INVALID_VECTOR)
 {
     float anglesBuffer[3];
     float forwardBuffer[3];
@@ -236,17 +310,17 @@ stock void AngleVectors(Vector angles, Vector forwardVector, Vector right = VECT
 
     angles.GetBuffer(anglesBuffer);
     forwardVector.GetBuffer(forwardBuffer);
-    if (right)
+    if (right != INVALID_VECTOR)
         right.GetBuffer(rightBuffer);
-    if (up)
+    if (up != INVALID_VECTOR)
         up.GetBuffer(upBuffer);
 
     GetAngleVectors(anglesBuffer, forwardBuffer, rightBuffer, upBuffer);
 
     forwardVector.SetBuffer(forwardBuffer);
-    if (right)
+    if (right != INVALID_VECTOR)
         right.SetBuffer(rightBuffer);
-    if (up)
+    if (up != INVALID_VECTOR)
         up.SetBuffer(upBuffer);
 }
 
@@ -255,3 +329,11 @@ stock void AngleVectors(Vector angles, Vector forwardVector, Vector right = VECT
 //////////////////////////////////////////////////////////////////////////////
 
 stock Vector vec3_origin = VECTOR_NULL;
+
+stock void DebugVectors()
+{
+    PrintToServer("Initiating vector debug.\nLength of vector collection: %i", vectorCollection.Length);
+    for (int i = 0; i < vectorCollection.Length; ++i)
+        PrintToServer("Vector %i, is it being used: %s", i, vectorCollection.Get(i, 3) == INVALID_VECTOR ? "no" : "yes");
+    PrintToServer("Ending vector debug.");
+}

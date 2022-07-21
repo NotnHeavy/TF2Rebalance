@@ -318,6 +318,8 @@ public void OnPluginStart()
     RegConsoleCmd("loadout", ShowLoadout);
     RegConsoleCmd("equip", ShowEquip);
 
+    vec3_origin = Vector();
+
     // Configs.
     GameData config = LoadGameConfigFile(PLUGIN_NAME);
     if (config == null)
@@ -482,6 +484,7 @@ public void OnPluginStart()
     initiatedConVars = true;
 
     // Hook onto entities.
+    /*
     for (int i = 1; i <= MaxClients; ++i)
     {
         if (IsClientInGame(i))
@@ -497,6 +500,7 @@ public void OnPluginStart()
         if (IsValidEntity(i) && i > MaxClients)
             CBaseEntity(i);
     }
+    */
 
     // Create the file name for the weapon changes list.
     if (configList[0] == '\0')
@@ -565,8 +569,6 @@ public void OnPluginStart()
 
     AddCommandListener(PrankExplosion, "voicemenu");
 
-    
-
     PrintToServer("\n\"%s\" has loaded.\n--------------------------------------------------------", PLUGIN_NAME);
 }
 
@@ -591,6 +593,7 @@ public void OnPluginEnd()
         if (definition.ModelRecord != NULL)
             definition.ModelRecord.Dispose();
     }
+    vec3_origin.Dispose();
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1001,23 +1004,6 @@ public Action OnPlayerRunCmd(int clientIndex, int& buttons, int& impulse, float 
         if (!client.Alive)
             toggle = false;
         weapon.ToggledRingOfFire = toggle;
-
-        // Hold R to use ring of fire.
-        /*
-        bool toggle = false;
-        if (buttons & IN_RELOAD)
-        {
-            toggle = true;
-            if (weapon != ToTFWeaponBase(client.GetMemberEntity(Prop_Send, "m_hActiveWeapon")) && !weapon.ToggledRingOfFire)
-            {
-                if (weapon.GetAmmo() < 20)
-                    toggle = false;
-                else
-                    weapon.SetAmmo(weapon.GetAmmo() - 20);
-            }
-        }
-        weapon.ToggledRingOfFire = toggle;
-        */
     }
 
     return Plugin_Continue;
@@ -1031,17 +1017,6 @@ void EntitySpawn(int entityIndex)
 {
     CBaseEntity entity = view_as<CBaseEntity>(entityIndex);
     entity.SpawnPosition = entity.GetAbsOrigin(.global = false);
-    /*
-    if (entity.ClassEquals("tf_projectile_energy_ring")) // Set the hitbox size of the Righteous Bison/Pomson 6000 projectiles.
-    {
-        Vector maxs = Vector(3.0, 3.0, 10.0, true);
-        Vector mins = -maxs;
-        entity.SetMemberVector(Prop_Send, "m_vecMaxs", maxs);
-        entity.SetMemberVector(Prop_Send, "m_vecMins", mins);
-        entity.SetMember(Prop_Send, "m_usSolidFlags", entity.GetMember(Prop_Send, "m_usSolidFlags") | FSOLID_USE_TRIGGER_BOUNDS);
-        entity.SetMember(Prop_Send, "m_triggerBloat", 24);
-    }
-    */
 }
 
 Action EntityTouch(int entityIndex, int otherIndex)

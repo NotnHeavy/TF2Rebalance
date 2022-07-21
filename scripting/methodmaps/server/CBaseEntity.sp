@@ -272,6 +272,7 @@ methodmap CBaseEntity
         cbaseentities[index].timestamp = GetGameTime();
         cbaseentities[index].rechargeTime = 0.00;
         cbaseentities[index].spawnPosition.Dispose();
+        cbaseentities[index].spawnPosition = VECTOR_NULL;
         cbaseentities[index].spreadMultiplier = 1.00;
         cbaseentities[index].lastShot = 0.00;
         cbaseentities[index].toggledRingOfFire = false;
