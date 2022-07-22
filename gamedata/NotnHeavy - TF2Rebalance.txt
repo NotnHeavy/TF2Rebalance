@@ -353,7 +353,7 @@
 			"CTFGameRules::RadiusDamage"
 			{
 				"library" "server"
-				"windows" "\x55\x8B\xEC\x81\xEC\x24\x08\x00\x00"
+				"windows" "\x55\x8B\xEC\x81\xEC\x24\x08\x00\x00\x53"
 				"linux"	  "@_ZN12CTFGameRules12RadiusDamageER19CTFRadiusDamageInfo"
 			}
 
